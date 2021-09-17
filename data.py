@@ -160,15 +160,15 @@ class Data(QtCore.QObject):
         self.reg_max = (np.abs(self.x_scaled - b)).argmin()
         self.raw_region_x = self.x_scaled[self.reg_min:self.reg_max]
         self.raw_region_y = self.y_scaled[self.reg_min:self.reg_max]
-        self.current_x = self.raw_region_x
-        self.current_y = self.raw_region_y
-
-
+        self.cut_x = self.raw_region_x - self.raw_region_x[0]
+        self.cut_y = self.raw_region_y
+        self.current_x = self.cut_x
+        self.current_y = self.cut_y
 
     def transformation(self, derivative, integral, x_offset, y_offset, neg, rev,  y_zero, lcomp):
         print('transformation')
-        self.x_transformed = self.raw_region_x + x_offset
-        self.y_transformed = self.raw_region_y + y_offset
+        self.x_transformed = self.current_x + x_offset
+        self.y_transformed = self.current_y + y_offset
         dx = self.x_transformed[1] - self.x_transformed[0]
         print('dx = ', dx)
         if neg:

@@ -32,15 +32,11 @@ def main():
     print('main')
 
 
-    #QtWidgets.QApplication.setAttribute(QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-
     def make_dpi_aware():
         if int(platform.release()) >= 8:
             ctypes.windll.shcore.SetProcessDpiAwareness(True)
-
     # add this code before "app = QtWidgets.QApplication(sys.argv)"
-    make_dpi_aware()
-
+    #make_dpi_aware()   # WINdows !?
 
 
     app = QtGui.QApplication([])
