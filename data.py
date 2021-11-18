@@ -218,6 +218,13 @@ class Data(QtCore.QObject):
             self.current_y = self.y_transformed
         return f_control
 
+    def butterworth(self, order, Wn, type):
+        ny = (1 / self.T)/2
+        b, a = signal.butter(order, Wn /ny, type, analog=False)
+        self.y_filtered = signal.filtfilt(b, a, self.y_transformed)
+        self.current_y = self.y_filtered
+
+
     def s_g(self, size, order):
         f_control = 'active filter: s_g - size=' + str(size) + ' order=' + str(order)
         print(f_control)

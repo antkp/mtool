@@ -4,6 +4,7 @@ import numpy as np
 import pickle
 from pathlib import Path
 
+# todo bei Eingabe eines Offset und danach eines anderen Parameters wird der Offset aufaddiert
 
 class Control:
     def __init__(self, data, ui):
@@ -68,6 +69,11 @@ class Control:
 
         self.ui.p.child('filter').child('select filter').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('gauss').child('sigma').sigValueChanged.connect(self.on_filter)
+        self.ui.p.child('filter').child('butterworth').child('type').sigValueChanged.connect(self.on_filter)
+        self.ui.p.child('filter').child('butterworth').child('order').sigValueChanged.connect(self.on_filter)
+        self.ui.p.child('filter').child('butterworth').child('low_cut').sigValueChanged.connect(self.on_filter)
+        self.ui.p.child('filter').child('butterworth').child('high_cut').sigValueChanged.connect(self.on_filter)
+
         self.ui.p.child('filter').child('savitzky–golay').child('size').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('savitzky–golay').child('order').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('lowess').child('fraction').sigValueChanged.connect(self.on_filter)
@@ -228,20 +234,63 @@ class Control:
             self.filter = self.ui.p.child('filter').child('select filter').value()
             if self.filter == '- no filter -':
                 self.ui.p.child('filter').child('gauss').hide()
+                self.ui.p.child('filter').child('butterworth').hide()
                 self.ui.p.child('filter').child('savitzky–golay').hide()
                 self.ui.p.child('filter').child('lowess').hide()
+
                 self.data.gauss(0, False)
                 config_filter = ''
 
             if self.filter == 'gauss':
                 self.ui.p.child('filter').child('gauss').show()
+                self.ui.p.child('filter').child('butterworth').hide()
                 self.ui.p.child('filter').child('savitzky–golay').hide()
                 self.ui.p.child('filter').child('lowess').hide()
                 self.sigma = self.ui.p.child('filter').child('gauss').child('sigma').value()
                 config_filter = ' - - - ' + str(self.data.gauss(self.sigma, True))
 
+            if self.filter == 'butterworth':
+                self.ui.p.child('filter').child('gauss').hide()
+                self.ui.p.child('filter').child('butterworth').show()
+                self.ui.p.child('filter').child('savitzky–golay').hide()
+                self.ui.p.child('filter').child('lowess').hide()
+
+                self.ui.p.child('filter').child('butterworth').child('high_cut').hide()
+                self.ui.p.child('filter').child('butterworth').child('low_cut').hide()
+
+                #self.sigma = self.ui.p.child('filter').child('gauss').child('sigma').value()
+                butter_type = self.ui.p.child('filter').child('butterworth').child('type').value()
+                butter_order = self.ui.p.child('filter').child('butterworth').child('order').value()
+                butter_lowcut = self.ui.p.child('filter').child('butterworth').child('low_cut').value()
+                butter_highcut = self.ui.p.child('filter').child('butterworth').child('high_cut').value()
+
+                if butter_type == 'lowpass':
+                    self.ui.p.child('filter').child('butterworth').child('high_cut').show()
+                    self.ui.p.child('filter').child('butterworth').child('low_cut').hide()
+                    config_filter = ' - - - ' + str(self.data.butterworth(butter_order, butter_highcut, butter_type))
+
+                if butter_type == 'highpass':
+                    self.ui.p.child('filter').child('butterworth').child('low_cut').show()
+                    self.ui.p.child('filter').child('butterworth').child('high_cut').hide()
+                    config_filter = ' - - - ' + str(self.data.butterworth(butter_order, butter_lowcut, butter_type))
+
+                if butter_type == 'bandpass':
+                    self.ui.p.child('filter').child('butterworth').child('low_cut').show()
+                    self.ui.p.child('filter').child('butterworth').child('high_cut').show()
+                    config_filter = ' - - - ' + str(self.data.butterworth(butter_order, [butter_lowcut, butter_highcut], butter_type))
+
+                if butter_type == 'bandstop':
+                    self.ui.p.child('filter').child('butterworth').child('low_cut').show()
+                    self.ui.p.child('filter').child('butterworth').child('high_cut').show()
+                    config_filter = ' - - - ' + str(
+                    self.data.butterworth(butter_order, [butter_lowcut, butter_highcut], butter_type))
+
+
+
+
             if self.filter == 'savitzky–golay':
                 self.ui.p.child('filter').child('gauss').hide()
+                self.ui.p.child('filter').child('butterworth').hide()
                 self.ui.p.child('filter').child('savitzky–golay').show()
                 self.ui.p.child('filter').child('lowess').hide()
                 self.size = self.ui.p.child('filter').child('savitzky–golay').child('size').value()
@@ -250,6 +299,7 @@ class Control:
 
             if self.filter == 'lowess':
                 self.ui.p.child('filter').child('gauss').hide()
+                self.ui.p.child('filter').child('butterworth').hide()
                 self.ui.p.child('filter').child('savitzky–golay').hide()
                 self.ui.p.child('filter').child('lowess').show()
                 self.fraction = self.ui.p.child('filter').child('lowess').child('fraction').value()

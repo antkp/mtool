@@ -45,9 +45,17 @@ class UI:
                 {'name': 'y-zero @ x-zero', 'type': 'bool', 'value': False, 'tip': 'set y offset XYZ'}]},
             {'name': 'filter', 'type': 'group', 'expanded': True, 'visible': True, 'children': [
                 {'name': 'select filter', 'type': 'list', 'values':
-                    ['- no filter -', 'gauss', 'savitzky–golay', 'lowess'], 'value': '- no filter -', 'tip': 'https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter1d.html'},
-                {'name': 'gauss', 'type': 'group', 'expanded': True, 'visible': False, 'children': [
+                    ['- no filter -', 'gauss', 'butterworth', 'savitzky–golay', 'lowess'], 'value': '- no filter -'},
+                {'name': 'gauss', 'type': 'group', 'expanded': True, 'visible': False, 'tip': 'https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter1d.html','children': [
                     {'name': 'sigma', 'type': 'float', 'value': 3.0, 'limits': (0.0, 6.0), 'step': 0.1}]},
+                {'name': 'butterworth', 'type': 'group', 'expanded': True, 'visible': False,
+                 'tip': 'https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html',
+                 'children': [
+                     {'name': 'type', 'type': 'list', 'values':
+                         ['lowpass', 'highpass', 'bandpass', 'bandstop'], 'value': 'lowpass'},
+                     {'name': 'order', 'type': 'int', 'value': 4, 'limits': (2, 10), 'step': 2},
+                     {'name': 'low_cut', 'type': 'int', 'value': 30, 'limits': (1, 10000), 'step': 1},
+                     {'name': 'high_cut', 'type': 'int', 'value': 30, 'limits': (1, 10000), 'step': 1}]},
                 {'name': 'savitzky–golay', 'type': 'group', 'expanded': True, 'visible': False, 'tip': 'https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html', 'children': [
                     {'name': 'size', 'type': 'int', 'value': 31, 'limits': (11, 501), 'step': 1},
                     {'name': 'order', 'type': 'int', 'value': 3, 'limits': (2, 10), 'step': 1}]},
