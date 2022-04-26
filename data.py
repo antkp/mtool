@@ -2,13 +2,22 @@ import os
 import pyqtgraph as pg
 import numpy as np
 import scipy as sp
+import itertools
+
+from xlsxwriter import Workbook
 from scipy.signal import get_window
 from scipy import signal
 from scipy.optimize import curve_fit
 from pyqtgraph.Qt import QtCore
 from scipy.ndimage import gaussian_filter1d
 from scipy import integrate
+from scipy import stats
 from statsmodels.nonparametric.smoothers_lowess import lowess
+
+# todo
+#   exel export     --> path & filename
+#   PPMAC export    --> start Stop length in filename
+#   extend data     --> eliminate offset between data and extendet values
 
 
 class Data(QtCore.QObject):
@@ -18,11 +27,13 @@ class Data(QtCore.QObject):
         super().__init__()
         self.filepath = ''
         self.DWR = ''
+        self.RMS = ''
         self.head = 0
         self.delimiter = ','
         self.separator = '.'
         self.xcol = 2
         self.ycol = 1
+        self.nthval = 1
         self.xscale = 1.0
         self.yscale = 1.0
         self.rows = ''
@@ -50,7 +61,6 @@ class Data(QtCore.QObject):
         self.comparray = []
         self.x_filtered = []
         self.y_filtered = []
-        self.y_devdist = []
         self.xx = []
         self.yy = []
         self.x_f = []
@@ -81,11 +91,14 @@ class Data(QtCore.QObject):
         self.extend_info = ''
         self.fund_info = ''
 
-    def selectfile(self, path): #filedialog gehört eigentlich in die GUI ?
+    def selectfile(self, path):
+
+        # todo evtl. "preload mit Vorschau nur wenige sec versuchen danach stoppen"
         print('selectfile')
         qfd = pg.FileDialog()
         filter = "Text files (*.txt *lsdf *.csv)"
         self.selectedFile = pg.FileDialog.getOpenFileName(qfd, "select file", path, filter)
+        print('selected 1 = ', self.filepath)
         self.filepath = self.selectedFile[0]
         self.rows = ''
         with open(self.filepath, newline='', mode='r') as f:
@@ -94,88 +107,108 @@ class Data(QtCore.QObject):
         return self.filepath
 
     def load(self, len_comp):
-        print('load')
+        print('-load-')
         text = open(self.filepath, 'r').read()
-        p = text.find('0;0;0;0;0;')
-        rtext = text[::-1]
-        #print(rtext)
-        xx = rtext.rfind(';0')
-        print('rtext[0:xx] =',rtext[0:xx])
-
-        print('len.text = ', len(text))
-        print('p = ', p)
-        print('xx= ', xx)
-        print('len(text) - xx= ', len(text)-xx)
-
-
-        text = text[0:p]
-        text = text.replace('nan', '0')
         if self.separator == ',':
             text = text.replace(',', '.')
+            print(len(text))
+        p = text.find('0;0;0;0;0;')
+        text = text[0:p]
+        text = text.replace('nan', '0')
         temp_file = open("temp", "w+")
         temp_file.write(text)
-        data = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter, usecols=[self.xcol, self.ycol], autostrip=True)
+
+        if self.xcol != -1:
+            print('xcol = ', self.xcol)
+            if self.nthval != 1:
+                print('nthval = ', self.nthval)
+                with open('temp') as f_in:
+                    data = np.genfromtxt(itertools.islice(f_in, 0, None, self.nthval), skip_header=self.head,
+                                delimiter=self.delimiter, usecols=[self.xcol, self.ycol], autostrip=True)
+            else:
+                print('nthval ++ = ', self.nthval)
+                data = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter,
+                                usecols=[self.xcol, self.ycol], autostrip=True)
+
+            self.x_raw = data[:, 0]
+            self.y_raw = data[:, 1]
+        else:
+            print('xcol ## = ', self.xcol)
+            if self.nthval != 1:
+                print('nthval = ', self.nthval)
+                with open('temp') as f_in:
+                    self.y_raw = np.genfromtxt(itertools.islice(f_in, 0, None, self.nthval), skip_header=self.head,
+                                delimiter=self.delimiter, usecols=[self.ycol], autostrip=True)
+            else:
+                print('nthval ++ = ', self.nthval)
+                print('###___###')
+                self.y_raw = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter,
+                                usecols=[self.ycol], autostrip=True)
+
+            self.x_raw = np.arange(start=0, stop=len(self.y_raw))
+
         temp_file.close()
         os.remove("temp")
-        self.x_raw = data[:, 0]
-        self.y_raw = data[:, 1]
-        print('self.x_raw[0:5] = ', self.x_raw[0:5])
-        print('self.y_raw[0:5] = ', self.y_raw[0:5])
+
+
         if len_comp:
             g = self.x_raw[0] - self.x_raw[-1]
             h = self.y_raw[0] - self.y_raw[-1]
             signg = np.sign(g)
             signh = np.sign(h)
 
-            print('g = ', g)
-            print('h = ', h)
-            print('signg = ', signg)
-            print('signh = ', signh)
             y_1 = self.y_raw - self.y_raw[0]
             x_1 = self.x_raw - self.x_raw[0]
             if signg == signh:
                 self.y_raw = y_1 - x_1
             else:
                 self.y_raw = y_1 + x_1
-            print('self.x_raw[0:5] = ', self.x_raw[0:5])
-            print('self.y_raw[0:5] = ', self.y_raw[0:5])
-        self.x_scaled = self.x_raw * self.xscale
-        self.y_scaled = self.y_raw * self.yscale
-        self.y_lincomp = self.y_raw * self.yscale
-        self.current_x = self.x_raw * self.xscale
-        self.current_y = self.y_raw * self.yscale
-        self.T = abs(round(self.x_scaled[11] - self.x_scaled[10], 6))
-        print('self.T = ', self.T)
+
+        self.current_x = self.x_raw # * self.xscale
+        self.current_y = self.y_raw # * self.yscale
+        self.T = abs(round(self.x_raw[11] - self.x_raw[10], 6))
+        #print('self.T = ', self.T)
         self.wi2Text = '\n' + ' T = ' + str(self.T) + '\n' + \
                   ' fs = ' + str(round((1 / self.T), 8)) + '\n' + \
                   ' N = ' + str(len(self.x_raw)) + '\n' + \
                   ' t = ' + str(round(len(self.x_raw) * self.T, 8))
-        print('self.wi2Text = ', self.wi2Text)
+        #print('self.wi2Text = ', self.wi2Text)
+
         self.sig_data_loaded.emit()
 
     def region_change(self, region):
         print('region_change')
         a, b = region
-        self.reg_min = (np.abs(self.x_scaled - a)).argmin()
-        self.reg_max = (np.abs(self.x_scaled - b)).argmin()
-        self.raw_region_x = self.x_scaled[self.reg_min:self.reg_max]
-        self.raw_region_y = self.y_scaled[self.reg_min:self.reg_max]
+        self.reg_min = (np.abs(self.x_raw - a)).argmin()
+        self.reg_max = (np.abs(self.x_raw - b)).argmin()
+        self.raw_region_x = self.x_raw[self.reg_min:self.reg_max]
+        self.raw_region_y = self.y_raw[self.reg_min:self.reg_max]
         self.cut_x = self.raw_region_x - self.raw_region_x[0]
         self.cut_y = self.raw_region_y
         self.current_x = self.cut_x
         self.current_y = self.cut_y
 
-    def transformation(self, derivative, integral, x_offset, y_offset, neg, rev,  y_zero, lcomp):
+    def linreg(self, x, y):
+        res_a = stats.linregress(x, y)
+        i = (res_a.intercept)
+        s = (res_a.slope)
+        reg = -(i + s * x) + y
+        return reg
+
+    def transformation(self, derivative, integral, x_scale, y_scale, x_offset, y_offset, neg, rev,  y_zero, lreg, flpz):
         print('transformation')
-        self.x_transformed = self.current_x + x_offset
-        self.y_transformed = self.current_y + y_offset
+        self.x_transformed = (self.cut_x * x_scale) + x_offset
+        self.y_transformed = (self.cut_y * y_scale) + y_offset
+
         dx = self.x_transformed[1] - self.x_transformed[0]
         print('dx = ', dx)
         if neg:
             self.y_transformed = -self.y_transformed
         if rev:
             self.y_transformed = self.y_transformed[::-1]
-        if lcomp:
+        if lreg:
+            self.y_transformed = self.linreg(self.x_transformed, self.y_transformed)
+        if flpz:
             self.delta = self.y_transformed[-1] - self.y_transformed[0]
             self.n = len(self.y_transformed)
             self.comparray = np.arange(0, self.delta, (self.delta / self.n))
@@ -186,20 +219,11 @@ class Data(QtCore.QObject):
         if derivative != 0:
             self.x_transformed = self.x_transformed[:-derivative]+(derivative*dx)
             self.y_transformed = np.diff(self.raw_region_y, n=derivative)
-            print(len(self.raw_region_x))
-            print(len(self.x_transformed))
-
         if integral == 1:
             self.y_transformed = integrate.cumtrapz(self.y_transformed, self.x_transformed, initial=0.0)
-            print(len(self.raw_region_x))
-            print(len(self.x_transformed))
-
         if integral == 2:
             self.y_transformed = integrate.cumtrapz(self.y_transformed, self.x_transformed, initial=0.0)
             self.y_transformed = integrate.cumtrapz(self.y_transformed, self.x_transformed, initial=0.0)
-            print(len(self.raw_region_x))
-            print(len(self.x_transformed))
-
         if y_zero:
             idx = np.searchsorted(self.x_transformed, 0, side="left")
             self.y_transformed = self.y_transformed - self.y_transformed[idx]
@@ -224,7 +248,6 @@ class Data(QtCore.QObject):
         self.y_filtered = signal.filtfilt(b, a, self.y_transformed)
         self.current_y = self.y_filtered
 
-
     def s_g(self, size, order):
         f_control = 'active filter: s_g - size=' + str(size) + ' order=' + str(order)
         print(f_control)
@@ -240,19 +263,45 @@ class Data(QtCore.QObject):
         self.current_y = self.y_filtered
         return f_control
 
-    def dev_dist(self, section, ch):
+    def dev_dist(self, lin_prop, section, ch): #self.data.dev_dist(lin_prop, section,True)
         print('dev_dist')
         if ch:
             self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
-            for i in range(len(self.y_filtered) - int(section)):
-                arr = self.y_filtered[i:i + int(section)]
-                self.y_devdist[i + int(section / 2)] = max(arr) - min(arr)
-            x = self.y_devdist
-            x = x[~np.isnan(x)]
-            self.DWR = '\n' + 'DWR_max = ' + str(max(x))
+            if lin_prop:
+                for i in range(len(self.y_filtered) - int(section)):
+                    y_arr = self.y_filtered[i:i + int(section)]
+                    x_arr = self.x_transformed[i:i + int(section)]
+                    y_reg = self.linreg(x_arr, y_arr)
+                    self.y_devdist[i + int(section / 2)] = np.ptp(y_reg)
+                x = self.y_devdist
+                x = x[~np.isnan(x)]
+                self.DWR = '\n' + 'DWRL = ' + str(max(x))
+            else:
+                for i in range(len(self.y_filtered) - int(section)):
+                    y_arr = self.y_filtered[i:i + int(section)]
+                    self.y_devdist[i + int(section / 2)] = np.ptp(y_arr)
+                x = self.y_devdist
+                x = x[~np.isnan(x)]
+                self.DWR = '\n' + 'DWR = ' + str(max(x))
         else:
-            self.DWR = ''
+            self.DWR = '---'
 
+    def rms_dist(self, section, ch):
+        print('rms_dist')
+        if ch:
+            self.y_devrms = np.arange(len(self.y_filtered)) * np.nan  # y_div dist!!!
+
+            for i in range(len(self.y_filtered) - int(section)):
+                y_arr = self.y_filtered[i:i + int(section)]
+                self.y_devrms[i + int(section / 2)] = np.sqrt(np.mean(np.square(y_arr)))  #max(y_arr) - min(y_arr)
+            x = self.y_devrms
+            x = x[~np.isnan(x)]
+            self.RMS = '\n' + 'RMS = ' + str(max(x))
+        else:
+            self.RMS = '---'
+
+
+    # todo fft log scale Y ?
     def fft(self, win, win_coeff):
         N = len(self.y_filtered)  # number of samples
         self.x_f = np.linspace(0.0, 1.0 / (2.0 * self.T * self.xscale), N // 2)
@@ -336,14 +385,82 @@ class Data(QtCore.QObject):
     def exp_func(self, x, a, b, c, d):
         return a * np.exp(-b * x) + c
 
-    def export(self):
+#  DWS period size in x scale !
+
+    def export(self): # todo export to PPMAC
         print('export')
-        exportfile = os.path.basename(self.filepath)
-        exportfile = os.path.splitext(exportfile)[0]
-        export_filename = pg.FileDialog.getSaveFileName(None, "export file", os.path.basename(exportfile), "CSV files (*.csv)")
+        dirname = os.path.dirname(self.filepath)
+        exportfilename = os.path.basename(self.filepath)
+        exportfilename = str(os.path.splitext(exportfilename)[0])
+        exportfilename = str(exportfilename)+'.csv'
+        expfile = os.path.join(dirname, exportfilename)
+        export_filename = pg.FileDialog.getSaveFileName(None, "export file", 'expfile', "CSV files (*.csv)")
         file = open(export_filename[0], 'w')
         np.savetxt(file, self.extend_array.reshape(-1, 1), delimiter=',', fmt='%10.9f')
         file.close()
+
+    def excel_export(self, dws, ex_lin, section):
+        # todo evtl. include export with extend ??
+        dirname = os.path.dirname(self.filepath)
+        exportfilename = os.path.basename(self.filepath)
+        exportfilename = str(os.path.splitext(exportfilename)[0])
+        exportfilename = str(exportfilename)+'.xlsx'
+        expfile = os.path.join(dirname, exportfilename)
+        expfile = dirname+'/'+ exportfilename
+        print('----------------', expfile)
+        export_filename = pg.FileDialog.getSaveFileName(None, "export file as", expfile, "EXCEL files (*.xlsx)")
+
+        workbook = Workbook(str(export_filename[0]))
+        worksheet = workbook.add_worksheet()  # Required for the chart data.
+        worksheet.write_column('A1', self.current_x)
+        worksheet.write_column('B1', self.current_y)
+
+        chart_1 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
+        chart_1.add_series({
+            'name': exportfilename,
+            'line': {'width': 1, 'color': '#002060'},
+            'categories': '=Sheet1!$A$1:$A$'+str(len(self.current_x)),
+            'values': '=Sheet1!$B$1:$B$'+str(len(self.current_x)), })
+
+        chart_1.set_size({'width': 604.5, 'height': 312.41})
+        chart_1.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
+        chart_1.set_title({'name': exportfilename, 'font': {'size': 9}, 'layout': {'x': 0.1, 'y': 0.0}})
+        chart_1.set_x_axis({'name': 'x-axis', 'label_position': 'low', 'name_layout': {'x': 0.45, 'y': 0.95, },
+                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+        chart_1.set_y_axis({'name': 'y-axis', 'label_position': 'low', 'name_layout': {'x': 0.0, 'y': 0.45, },
+                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+        #chart_1.set_legend({'position': 'top'})
+        chart_1.set_legend({'none': True})
+        worksheet.insert_chart('D2', chart_1)
+
+        if dws:
+            print('läuft')
+            print(self.y_devdist)
+            for row, data in enumerate(self.y_devdist):
+                try:
+                    worksheet.write(row, 2, data)
+                except:
+                    pass
+            chart_2 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
+            chart_2.add_series({
+                'name': "dws "+ exportfilename,
+                'line': {'width': 1, 'color': '#C00000'},
+                'categories': '=Sheet1!$A$1:$A$' + str(len(self.current_x)),
+                'values': '=Sheet1!$C$1:$C$' + str(len(self.current_x)), })
+
+            chart_2.set_size({'width': 604.5, 'height': 312.41})
+            chart_2.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
+            chart_2.set_title({'name': exportfilename + ' moving PV', 'font': {'size': 9}, 'layout': {'x': 0.1, 'y': 0.0}})
+            chart_2.set_x_axis({'name': 'x-axis', 'label_position': 'low', 'name_layout': {'x': 0.45, 'y': 0.95, },
+                              'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color': '#808080', }}, })
+            chart_2.set_y_axis({'name': 'y-axis', 'label_position': 'low', 'name_layout': {'x': 0.0, 'y': 0.45, },
+                              'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color': '#808080', }}, })
+            #chart_2.set_legend({'position': 'top'})
+            chart_2.set_legend({'none': True})
+            worksheet.insert_chart('D18', chart_2)
+
+        workbook.close()
+
 
     def polar(self, n, coeff, angle, remove_f, show_f):
         self.fund_info = ''
@@ -384,16 +501,24 @@ class Data(QtCore.QObject):
         self.circleMax.setPen(pg.mkPen(color=(200, 200, 0), width=2, style=QtCore.Qt.DotLine))
         self.circleMin.setPen(pg.mkPen(color=(200, 200, 0), width=2, style=QtCore.Qt.DotLine))
 
+    def rms(self, array):
+        return np.sqrt(np.mean(np.square(array)))
+
     def info_w3(self):
         print('info_w3')
         self.p2v = round(max(self.current_y) - min(self.current_y), 8)
         self.T = round(self.x_transformed[2] - self.x_transformed[1], 8)
-        self.wi3Text = '\n' + ' min = ' + str(round(min(self.current_y), 6)) + '\n' + \
+        self.wi3Text = \
+                 '\n' + \
+                 ' N = '   + str(      len(self.current_y)) + '\n' + \
+                 ' t = '   + str(round(len(self.current_y) * self.T, 6)) + '\n' + '\n' + \
+                 ' min = ' + str(round(min(self.current_y), 6)) + '\n' + \
                  ' max = ' + str(round(max(self.current_y), 6)) + '\n' + \
                  ' p2v = ' + str(round(self.p2v, 6)) + '\n' + \
-                 ' N = ' + str(len(self.current_y)) + '\n' + \
-                 ' t = ' + str(round(len(self.current_y) * self.T, 6)) + '\n' + '\n' + \
-                 self.wi3Pos + self.DWR + '\n' + '\n' + \
+                 ' RMS = ' + str(round(self.rms(self.current_y), 6)) + '\n' +\
+                 ' N = '   + str(len(self.current_y)) + '\n' + \
+                 ' t = '   + str(round(len(self.current_y) * self.T, 6)) + '\n' + '\n' + \
+                 self.wi3Pos + self.DWR + self.RMS + '\n' + '\n' + \
                  self.extend_info + '\n' + '\n' + \
                  self.fund_info
 

@@ -4,9 +4,9 @@ import numpy as np
 import pickle
 from pathlib import Path
 
-# todo bei Eingabe eines Offset und danach eines anderen Parameters wird der Offset aufaddiert
 
 class Control:
+
     def __init__(self, data, ui):
         self.path = ''
         self.title = ''
@@ -16,6 +16,11 @@ class Control:
         self.Sxx = []
         self.spxscale = 1.0
         self.spyscale = 1.0
+
+        self.region = self.ui.region.getRegion()
+
+        self.x_scale = self.ui.p.child('transformation').child('scale x-axis').value()
+        self.y_scale = self.ui.p.child('transformation').child('scale y-axis').value()
         self.x_offset = self.ui.p.child('transformation').child('x-offset').value()
         self.y_offset = self.ui.p.child('transformation').child('y-offset').value()
         self.neg = self.ui.p.child('transformation').child('negate').value()
@@ -23,8 +28,9 @@ class Control:
         self.y_zero = self.ui.p.child('transformation').child('y-zero @ x-zero').value()
         self.derivative = self.ui.p.child('transformation').child('n^th derivative').value()
         self.integral = self.ui.p.child('transformation').child('n^th integral').value()
-        self.region = self.ui.region.getRegion()
-        self.lcomp = self.ui.p.child('transformation').child('lin comp').value()
+        self.lreg = self.ui.p.child('transformation').child('linear regression').value()
+        self.flpz = self.ui.p.child('transformation').child('first&last point on same level').value()
+
         self.filter = self.ui.p.child('filter').child('select filter').value()
         self.sigma = self.ui.p.child('filter').child('gauss').child('sigma').value()
         self.size = self.ui.p.child('filter').child('savitzky–golay').child('size').value()
@@ -32,12 +38,18 @@ class Control:
         self.fraction = self.ui.p.child('filter').child('lowess').child('fraction').value()
         self.iteration = self.ui.p.child('filter').child('lowess').child('iteration').value()
 
+        self.transform_v_arr = ['n^th derivative', 'n^th integral', 'scale x-axis', 'scale y-axis', 'x-offset',
+                              'y-offset', 'negate', 'reverse', 'y-zero @ x-zero', 'linear regression',
+                              'first&last point on same level']
+        self.transform_p_arr = [self.derivative, self.integral, self.x_scale, self.y_scale, self.x_offset,
+                                self.y_offset, self.neg, self.rev, self.y_zero, self.lreg, self.flpz]
+
         self.ui.p.child('filepath').hide()
         self.ui.p.child('filename').hide()
         self.ui.p.child('config data').hide()
         self.ui.p.child('transformation').hide()
         self.ui.p.child('filter').hide()
-        self.ui.p.child('deviation within section').hide()
+        self.ui.p.child('moving Average').hide()
         self.ui.p.child('fft').hide()
         self.ui.p.child('extend axis').hide()
         self.ui.p.child('polar plot').hide()
@@ -50,22 +62,24 @@ class Control:
         self.ui.p.child('config data').child('decimal separator').sigValueChanged.connect(self.on_colselect)
         self.ui.p.child('config data').child('x-col').sigValueChanged.connect(self.on_colselect)
         self.ui.p.child('config data').child('y-col').sigValueChanged.connect(self.on_colselect)
-        self.ui.p.child('config data').child('scale x-axis').sigValueChanged.connect(self.on_colselect)
-        self.ui.p.child('config data').child('scale y-axis').sigValueChanged.connect(self.on_colselect)
-        self.ui.p.child('config data').child('length comp').sigValueChanged.connect(self.on_colselect)
+        self.ui.p.child('config data').child('use every n^th row').sigValueChanged.connect(self.on_colselect)
+
+        self.ui.p.child('config data').child('lengths compensation').sigValueChanged.connect(self.on_colselect)
         self.ui.p.child('config data').child('enter').sigActivated.connect(self.on_enter)
         self.ui.region.sigRegionChanged.connect(self.on_region_change)
 
         self.ui.p.child('transformation').child('plotcolor').sigValueChanged.connect(self.on_plotcolor)
+        self.ui.p.child('transformation').child('scale x-axis').sigValueChanged.connect(self.on_transformation)
+        self.ui.p.child('transformation').child('scale y-axis').sigValueChanged.connect(self.on_transformation)
         self.ui.p.child('transformation').child('x-offset').sigValueChanged.connect(self.on_transformation)
         self.ui.p.child('transformation').child('y-offset').sigValueChanged.connect(self.on_transformation)
         self.ui.p.child('transformation').child('negate').sigValueChanged.connect(self.on_transformation)
         self.ui.p.child('transformation').child('reverse').sigValueChanged.connect(self.on_transformation)
-        self.ui.p.child('transformation').child('lin comp').sigValueChanged.connect(self.on_transformation)
+        self.ui.p.child('transformation').child('first&last point on same level').sigValueChanged.connect(self.on_transformation)
+        self.ui.p.child('transformation').child('linear regression').sigValueChanged.connect(self.on_transformation)
         self.ui.p.child('transformation').child('y-zero @ x-zero').sigValueChanged.connect(self.on_transformation)
         self.ui.p.child('transformation').child('n^th derivative').sigValueChanged.connect(self.on_transformation)
         self.ui.p.child('transformation').child('n^th integral').sigValueChanged.connect(self.on_transformation)
-
 
         self.ui.p.child('filter').child('select filter').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('gauss').child('sigma').sigValueChanged.connect(self.on_filter)
@@ -78,8 +92,10 @@ class Control:
         self.ui.p.child('filter').child('savitzky–golay').child('order').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('lowess').child('fraction').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('lowess').child('iteration').sigValueChanged.connect(self.on_filter)
-        self.ui.p.child('deviation within section').child('show deviation').sigValueChanged.connect(self.on_deviation)
-        self.ui.p.child('deviation within section').child('section').sigValueChanged.connect(self.on_deviation)
+        self.ui.p.child('moving Average').child('show deviation').sigValueChanged.connect(self.on_deviation)
+        self.ui.p.child('moving Average').child('Average').sigValueChanged.connect(self.on_moving_avarage)
+        self.ui.p.child('moving Average').child('exclude linear proportion').sigValueChanged.connect(self.on_deviation)
+        self.ui.p.child('moving Average').child('section').sigValueChanged.connect(self.on_deviation)
         self.ui.p.child('fft').child('show fft').sigValueChanged.connect(self.on_fft)
         self.ui.p.child('fft').child('fft config').child('fft window').sigValueChanged.connect(self.on_fft)
         self.ui.p.child('fft').child('fft config').child('amplitude/phase').sigValueChanged.connect(self.on_fft)
@@ -91,11 +107,11 @@ class Control:
         self.ui.p.child('extend axis').child('extend data').sigValueChanged.connect(self.set_extend)
         self.ui.p.child('extend axis').child('extend').child('extend to +Pos').sigValueChanged.connect(self.on_extend)
         self.ui.p.child('extend axis').child('extend').child('extend to -Pos').sigValueChanged.connect(self.on_extend)
-        self.ui.p.child('extend axis').child('extend').child('export').sigValueChanged.connect(self.on_extend)
         self.ui.p.child('extend axis').child('extend').child('fit style').sigValueChanged.connect(self.on_extend)
         self.ui.p.child('extend axis').child('extend').child('- fit length').sigValueChanged.connect(self.on_extend)
         self.ui.p.child('extend axis').child('extend').child('+ fit length').sigValueChanged.connect(self.on_extend)
-        self.ui.p.child('extend axis').child('extend').child('export').sigActivated.connect(self.on_export)
+        self.ui.p.child('extend axis').child('extend').child('export for PPMAC').sigActivated.connect(self.on_export)
+        self.ui.p.child('extend axis').child('export to excel').sigActivated.connect(self.on_export_excel)
         self.ui.p.child('polar plot').child('use polar plot').sigValueChanged.connect(self.on_polar)
         self.ui.p.child('polar plot').child('polar config').child('n').sigValueChanged.connect(self.on_polar)
         self.ui.p.child('polar plot').child('polar config').child('scale coeff').sigValueChanged.connect(self.on_polar)
@@ -108,7 +124,7 @@ class Control:
         print('on_selectbtn')
         self.ui.p.child('transformation').hide()
         self.ui.p.child('filter').hide()
-        self.ui.p.child('deviation within section').hide()
+        self.ui.p.child('moving Average').hide()
         self.ui.p.child('fft').hide()
         self.ui.p.child('extend axis').hide()
         self.ui.p.child('polar plot').hide()
@@ -128,18 +144,16 @@ class Control:
         self.ui.w3.plotItem.hideAxis('left')
         self.ui.w3.plotItem.hideAxis('bottom')
         self.ui.p.child('config data').show()
-        #self.ui.p.child('config data').child('enter').show()
         self.data.head = self.ui.p.child('config data').child('head rows').value()
         self.data.delimiter = self.ui.p.child('config data').child('delimiter').value()
         self.data.separator = self.ui.p.child('config data').child('decimal separator').value()
         self.data.xcol = self.ui.p.child('config data').child('x-col').value()
         self.data.ycol = self.ui.p.child('config data').child('y-col').value()
-        self.data.xscale = self.ui.p.child('config data').child('scale x-axis').value()
-        self.data.yscale = self.ui.p.child('config data').child('scale y-axis').value()
-        if self.ui.p.child('config data').child('length comp').value():
+        self.data.nthval = self.ui.p.child('config data').child('use every n^th row').value()
+        if self.ui.p.child('config data').child('lengths compensation').value():
             self.ui.p.child('config data').child('head rows').setValue(1)
         try:
-            len_comp = self.ui.p.child('config data').child('length comp').value()
+            len_comp = self.ui.p.child('config data').child('lengths compensation').value()
             self.data.load(len_comp)
             self.on_treechange()
         except:
@@ -169,7 +183,7 @@ class Control:
         self.ui.w3.addItem(self.ui.plottext)
         self.ui.plottext.setText(self.data.rows)
         try:
-            self.ui.w2.plot(self.data.x_scaled, self.data.y_scaled, pen={'color': self.plotcolor, 'width': 1}, name= 'w2')
+            self.ui.w2.plot(self.data.x_raw, self.data.y_raw, pen={'color': self.plotcolor, 'width': 1}, name= 'w2')
             self.ui.wi2.setText(self.data.wi2Text)
             self.ui.w2.autoRange()
         except:
@@ -181,7 +195,7 @@ class Control:
         self.ui.p.child('config data').hide()
         self.ui.p.child('transformation').show()
         self.ui.p.child('filter').show()
-        self.ui.p.child('deviation within section').show()
+        self.ui.p.child('moving Average').show()
         self.ui.p.child('fft').show()
         self.ui.p.child('extend axis').show()
         self.ui.p.child('polar plot').show()
@@ -190,7 +204,7 @@ class Control:
         self.ui.wi3.setFixedWidth(180)
         self.ui.wi4.setFixedWidth(180)
         self.ui.w2.addItem(self.ui.region, ignoreBounds=True)
-        self.ui.region.setRegion([self.data.x_scaled[10], self.data.x_scaled[-11]])
+        self.ui.region.setRegion([self.data.x_raw[10], self.data.x_raw[-11]])
         self.ui.w3.scene().sigMouseMoved.connect(self.mouseMovedW3)
         self.ui.w4.scene().sigMouseMoved.connect(self.mouseMovedW4)
         self.ui.w5.view.scene().sigMouseMoved.connect(self.mouseMovedW5)
@@ -203,28 +217,51 @@ class Control:
             self.data.region_change(self.region)
             self.on_transformation(self.ui.none)
 
-    def on_transformation(self, param):
+    def on_transformation(self, p):
         with pg.BusyCursor():
             print('on_transformation')
-            if param.name() == 'n^th derivative':
-                self.derivative = param.value()
-            if param.name() == 'n^th integral':
-                self.integral = param.value()
-            if param.name() == 'x-offset':
-                self.x_offset = param.value()
-            if param.name() == 'y-offset':
-                self.y_offset = param.value()
-            if param.name() == 'negate':
-                self.neg = param.value()
-            if param.name() == 'reverse':
-                self.rev = param.value()
-            if param.name() == 'y-zero @ x-zero':
-                self.y_zero = param.value()
-            if param.name() == 'lin comp':
-                self.lcomp = param.value()
+            print('p.value() =', p.value())
+
+            self.transform_v_arr = ['n^th derivative', 'n^th integral', 'scale x-axis', 'scale y-axis', 'x-offset',
+                                    'y-offset', 'negate', 'reverse', 'y-zero @ x-zero', 'linear regression',
+                                    'first&last point on same level']
+            self.transform_p_arr = [self.derivative, self.integral, self.x_scale, self.y_scale, self.x_offset,
+                                    self.y_offset, self.neg, self.rev, self.y_zero, self.lreg, self.flpz]
+
+            # ch = self.ui.p.child('transformation').children()
+            # for i, key in enumerate(ch):
+            #     if key.name() == p.name():
+            #         print('p.name() = ', p.name())
+            #         print('key.name() = ', key.name())
+            #         break
+
+            if p.name() == 'n^th derivative':
+                self.derivative = p.value()
+            if p.name() == 'n^th integral':
+                self.integral = p.value()
+            if p.name() == 'scale x-axis':
+                self.x_scale = p.value()
+            if p.name() == 'scale y-axis':
+                self.y_scale = p.value()
+            if p.name() == 'x-offset':
+                self.x_offset = p.value()
+            if p.name() == 'y-offset':
+                self.y_offset = p.value()
+            if p.name() == 'negate':
+                self.neg = p.value()
+            if p.name() == 'reverse':
+                self.rev = p.value()
+            if p.name() == 'y-zero @ x-zero':
+                self.y_zero = p.value()
+            if p.name() == 'linear regression':
+                self.lreg = p.value()
+            if p.name() == 'first&last point on same level':
+                self.flpz = p.value()
+            self.data.transformation(self.derivative, self.integral, self.x_scale, self.y_scale,  self.x_offset,
+                                     self.y_offset, self.neg, self.rev, self.y_zero, self.lreg, self.flpz)
             self.ui.p.child('transformation').child('n^th derivative').sigValueChanged.connect(self.on_transformation)
             self.ui.p.child('transformation').child('n^th integral').sigValueChanged.connect(self.on_transformation)
-            self.data.transformation(self.derivative, self.integral, self.x_offset, self.y_offset , self.neg, self.rev, self.y_zero, self.lcomp)
+
             self.on_treechange()
             self.on_filter(self.ui.none)
 
@@ -285,9 +322,6 @@ class Control:
                     config_filter = ' - - - ' + str(
                     self.data.butterworth(butter_order, [butter_lowcut, butter_highcut], butter_type))
 
-
-
-
             if self.filter == 'savitzky–golay':
                 self.ui.p.child('filter').child('gauss').hide()
                 self.ui.p.child('filter').child('butterworth').hide()
@@ -314,12 +348,25 @@ class Control:
     def on_deviation(self):
         print('on_deviation')
         with pg.BusyCursor():
-            if self.ui.p.child('deviation within section').child('show deviation').value():
-                section = self.ui.p.child('deviation within section').child('section').value()
-                self.data.dev_dist(section, True)
+            if self.ui.p.child('moving Average').child('show deviation').value():
+                lin_prop = self.ui.p.child('moving Average').child('exclude linear proportion').value()
+                section = self.ui.p.child('moving Average').child('section').value() / self.x_scale
+                self.data.dev_dist(lin_prop, section, True)
+                self.data.rms_dist(section, True)
             else:
-                self.data.dev_dist(0, False)
+                self.data.dev_dist(False, 0, False)
+                self.data.rms_dist(0, False)
             self.on_fft()
+
+    def on_moving_avarage(self, p):
+        print('on moving avarage','___',  p.value())
+        self.ui.avaraga_arr
+        for i, key in enumerate(self.ui.av):
+            print(i, key)
+            if p.value() == key:
+                break
+        print(i, key)
+
 
     def on_fft(self):
         print('on_fft')
@@ -382,6 +429,14 @@ class Control:
         with pg.BusyCursor():
             self.data.export()
 
+    def on_export_excel(self):
+        print('on_export_excel')
+        with pg.BusyCursor():
+            dws = self.ui.p.child('moving Average').child('show deviation').value()
+            ex_lin = self.ui.p.child('moving Average').child('exclude linear proportion').value()
+            section = self.ui.p.child('moving Average').child('section').value()
+            self.data.excel_export(dws, ex_lin, section)
+
     def on_polar(self):
         print('on_polar')
         with pg.BusyCursor():
@@ -433,8 +488,9 @@ class Control:
                 self.ui.w3.plotItem.showAxis('bottom')
                 self.ui.w3.setAspectLocked(lock=False, ratio=None)
                 self.ui.w3.plot(self.data.current_x, self.data.current_y, pen={'color': self.plotcolor, 'width': 1}, name='region')
-                if self.ui.p.child('deviation within section').child('show deviation').value():
+                if self.ui.p.child('moving Average').child('show deviation').value():
                     self.ui.w3.plot(self.data.x_transformed, self.data.y_devdist, pen={'color': (230, 50, 50), 'width': 3}, name='dev sec')
+                    self.ui.w3.plot(self.data.x_transformed, self.data.y_devrms, pen={'color': (200, 150, 150), 'width': 3}, name='rms sec')
                 self.ui.wi3.setText(self.data.wi3Text)
                 if self.ui.p.child('extend axis').child('extend data').value():
                     self.ui.w3.plot(self.data.X_extend_1, self.data.Y_extend_1, pen={'color': (100, 100, 255), 'width': 3}, name='extended_1')
@@ -484,7 +540,7 @@ class Control:
                       self.ui.w4.setTitle( self.title + ' - polar spectrum - fft-window=' + self.win )
                     else:
                       self.ui.w4.plot(self.data.x_f, self.data.y_f, pen={'color': self.plotcolor, 'width': 1})
-                      self.ui.w4.setTitle( self.title + ' - amplitude spectrum - fft-filter=' + self.win )
+                      self.ui.w4.setTitle( self.title + ' - amplitude spectrum - fft-window=' + self.win )
 
                 else:
                     self.ui.p.child('fft').child('fft config').hide()

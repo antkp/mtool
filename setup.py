@@ -1,8 +1,8 @@
 from pyinstaller_setuptools import setup
 
 setup(
-    name="mtool-1.04.1 measurement app",
-    version="1.04.1",
+    name="mtool-1.42_ALPHA",
+    version="1.42",
     description="Read me",
     long_description=README,
     long_description_content_type="text/markdown",

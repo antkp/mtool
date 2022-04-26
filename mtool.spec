@@ -2,11 +2,10 @@
 
 block_cipher = None
 
-
 a = Analysis(['main.py'],
              pathex=['C:\\Users\\'],
              binaries=[],
-             datas=[('logo.ico', '.')],
+             datas=[('log.ico', 'log.png')],
              hiddenimports=['scipy.optimize.curve_fit'],
              hookspath=[],
              runtime_hooks=[],
@@ -23,7 +22,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='main',
+          name='mtool-v1.42_ALPHA',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -31,4 +30,4 @@ exe = EXE(pyz,
           upx_exclude=[],
           runtime_tmpdir=None,
           console=True ,
-          icon='logo.ico')
+          icon='log.ico')

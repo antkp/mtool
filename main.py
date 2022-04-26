@@ -7,18 +7,12 @@ from control import Control
 import ctypes
 import platform
 
-
-
 #ToDo:
 # test the code !!!
 # spectrogramm RIO line ?
-# maybe use version.txt
-# maybe use setup.py !
-# Bei Improt von Daten mit 3*E-XX entstehen fehler beim CSV-export (3*E-6 -- sollte eher 0 ausgegeben werden)
+# maybe use setup.py ! ?
 # check number of values in "export" function
-# add function "export to Zerodurmerge"
-
-
+# add function "export to Zerodurmerge" ???
 
 try:
     # Include in try/except block if you're also targeting Mac/Linux
@@ -42,7 +36,7 @@ def main():
     app = QtGui.QApplication([])
     win = QtGui.QMainWindow()
     ui = UI(win)
-    app.setWindowIcon(QtGui.QIcon('logo.ico'))
+    app.setWindowIcon(QtGui.QIcon('log.png'))
     data = Data()
     control = Control(data, ui)
     win.show()
