@@ -398,16 +398,16 @@ class Data(QtCore.QObject):
     def exp_func(self, x, a, b, c, d):
         return a * np.exp(-b * x) + c
 
-#  DWS period size in x scale !
 
-    def export(self): # todo export to PPMAC
+    def export(self, length, N, offset): # todo export to PPMAC
         print('export')
         dirname = os.path.dirname(self.filepath)
         exportfilename = os.path.basename(self.filepath)
         exportfilename = str(os.path.splitext(exportfilename)[0])
-        exportfilename = str(exportfilename)+'.csv'
+        exportfilename = str(exportfilename)+'_length='+str(length)+'_points='+str(N)+'_offset='+str(offset)+'.csv'
         expfile = os.path.join(dirname, exportfilename)
-        export_filename = pg.FileDialog.getSaveFileName(None, "export file", 'expfile', "CSV files (*.csv)")
+
+        export_filename = pg.FileDialog.getSaveFileName(None, "export file", expfile, "CSV files (*.csv)")
         file = open(export_filename[0], 'w')
         np.savetxt(file, self.extend_array.reshape(-1, 1), delimiter=',', fmt='%10.9f')
         file.close()
@@ -415,19 +415,23 @@ class Data(QtCore.QObject):
     def excel_export(self,children , dws, ex_lin, section):
         # todo evtl. include export with extend ??
         dirname = os.path.dirname(self.filepath)
-        exportfilename = os.path.basename(self.filepath)
-        exportfilename = str(os.path.splitext(exportfilename)[0])
-        exportfilename = str(exportfilename)+'.xlsx'
+        exportfile = os.path.basename(self.filepath)
+        exportfile = str(os.path.splitext(exportfile)[0])
+        exportfilename = str(exportfile)+'.xlsx'
         expfile = os.path.join(dirname, exportfilename)
         expfile = dirname+'/'+ exportfilename
-        print('----------------', expfile)
         export_filename = pg.FileDialog.getSaveFileName(None, "export file as", expfile, "EXCEL files (*.xlsx)")
 
         workbook = Workbook(str(export_filename[0]))
 
-        worksheet1 = workbook.add_worksheet()  # Required for the chart data.
-        worksheet1.write_column('A1', self.current_x)
-        worksheet1.write_column('B1', self.current_y)
+        worksheet1 = workbook.add_worksheet(exportfile)  # Required for the chart data.
+        worksheet1.write_column('A2', self.current_x)
+        worksheet1.write('A1', 'X')
+        #worksheet1.write('A2', self.current_x)
+        worksheet1.write_column('B2', self.current_y)
+        worksheet1.write('B1', exportfilename)
+        #worksheet1.write('B2', self.current_y)
+
 
         i = 0
         for key, value in self.val_dict.items():
@@ -439,8 +443,8 @@ class Data(QtCore.QObject):
         chart_1.add_series({
             'name': exportfilename,
             'line': {'width': 1, 'color': '#002060'},
-            'categories': '=Sheet1!$A$1:$A$'+str(len(self.current_x)),
-            'values': '=Sheet1!$B$1:$B$'+str(len(self.current_x)), })
+            'categories': '='+exportfile+'!$A$2:$A$'+str(len(self.current_x)),
+            'values': '='+exportfile+'!$B$2:$B$'+str(len(self.current_y))})
 
         chart_1.set_size({'width': 604.5, 'height': 312.41})
         chart_1.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
@@ -463,8 +467,8 @@ class Data(QtCore.QObject):
             chart_2.add_series({
                 'name': "dws "+ exportfilename,
                 'line': {'width': 1, 'color': '#C00000'},
-                'categories': '=Sheet1!$A$1:$A$' + str(len(self.current_x)),
-                'values': '=Sheet1!$C$1:$C$' + str(len(self.current_x)), })
+                'categories': '='+exportfile+'!$A$1:$A$' + str(len(self.current_x)),
+                'values': '='+exportfile+'!$C$1:$C$' + str(len(self.current_x))})
 
             chart_2.set_size({'width': 604.5, 'height': 312.41})
             chart_2.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
@@ -477,7 +481,7 @@ class Data(QtCore.QObject):
             chart_2.set_legend({'none': True})
             worksheet1.insert_chart('D18', chart_2)
 
-        worksheet2 = workbook.add_worksheet()
+        worksheet2 = workbook.add_worksheet('config')
 
         i = 0
         for key, value in children.items():

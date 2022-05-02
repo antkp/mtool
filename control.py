@@ -427,7 +427,11 @@ class Control:
     def on_export(self):
         print('on_export')
         with pg.BusyCursor():
-            self.data.export()
+            stop = self.ui.p.child('extend axis').child('extend').child('extend to +Pos').value()
+            offset = self.ui.p.child('extend axis').child('extend').child('extend to -Pos').value()
+            length = stop - offset
+            N = str(len(self.data.extend_array))
+            self.data.export(length, N , offset)
 
     def on_export_excel(self):
         print('on_export_excel')
