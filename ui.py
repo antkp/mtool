@@ -10,8 +10,6 @@ from pathlib import Path
 #  Pickle Option only for config data not for Filter,Transform ... ???
 
 
-
-
 class UI:
     def __init__(self, main_window):
 
@@ -19,7 +17,7 @@ class UI:
                            [1.0, 2.3833, 1.8534, 2.002, 4.6433],  # amplitudeCorrection
                            [1.0, 1.97, 1.59, 1.63, 2.26]]  # energyCorrection
 
-        self.avarage_arr = ['no avarage', 'simple moving avarage', 'simple moving median', 'moving RMS', 'cumulative average', 'weighted moving average', 'exponential moving average', 'savitzky–golay', 'lowess']
+        self.avarage_arr = ['no_avarage', 'simple_moving_avarage', 'DWR', 'DWR_slope_removed']
 
         self.params = \
             [

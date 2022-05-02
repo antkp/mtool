@@ -92,10 +92,10 @@ class Control:
         self.ui.p.child('filter').child('savitzky–golay').child('order').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('lowess').child('fraction').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('lowess').child('iteration').sigValueChanged.connect(self.on_filter)
-        self.ui.p.child('moving Average').child('show deviation').sigValueChanged.connect(self.on_deviation)
+        self.ui.p.child('moving Average').child('show deviation').sigValueChanged.connect(self.on_moving_avarage)
         self.ui.p.child('moving Average').child('Average').sigValueChanged.connect(self.on_moving_avarage)
-        self.ui.p.child('moving Average').child('exclude linear proportion').sigValueChanged.connect(self.on_deviation)
-        self.ui.p.child('moving Average').child('section').sigValueChanged.connect(self.on_deviation)
+        self.ui.p.child('moving Average').child('exclude linear proportion').sigValueChanged.connect(self.on_moving_avarage)
+        self.ui.p.child('moving Average').child('section').sigValueChanged.connect(self.on_moving_avarage)
         self.ui.p.child('fft').child('show fft').sigValueChanged.connect(self.on_fft)
         self.ui.p.child('fft').child('fft config').child('fft window').sigValueChanged.connect(self.on_fft)
         self.ui.p.child('fft').child('fft config').child('amplitude/phase').sigValueChanged.connect(self.on_fft)
@@ -204,7 +204,7 @@ class Control:
         self.ui.wi3.setFixedWidth(180)
         self.ui.wi4.setFixedWidth(180)
         self.ui.w2.addItem(self.ui.region, ignoreBounds=True)
-        self.ui.region.setRegion([self.data.x_raw[10], self.data.x_raw[-11]])
+        self.ui.region.setRegion([self.data.x_raw[0], self.data.x_raw[-1]])
         self.ui.w3.scene().sigMouseMoved.connect(self.mouseMovedW3)
         self.ui.w4.scene().sigMouseMoved.connect(self.mouseMovedW4)
         self.ui.w5.view.scene().sigMouseMoved.connect(self.mouseMovedW5)
@@ -352,20 +352,30 @@ class Control:
                 lin_prop = self.ui.p.child('moving Average').child('exclude linear proportion').value()
                 section = self.ui.p.child('moving Average').child('section').value() / self.x_scale
                 self.data.dev_dist(lin_prop, section, True)
-                self.data.rms_dist(section, True)
             else:
                 self.data.dev_dist(False, 0, False)
-                self.data.rms_dist(0, False)
             self.on_fft()
 
+    # def on_moving_avarage(self, p):
+    #     print('on moving avarage','___',  p.value())
+    #     with pg.BusyCursor():
+    #         for i, key in enumerate(self.ui.avarage_arr):
+    #             print(i, key)
+    #             if p.value() == key:
+    #                 break
+    #         print(i, key)
+
+
     def on_moving_avarage(self, p):
-        print('on moving avarage','___',  p.value())
-        self.ui.avaraga_arr
-        for i, key in enumerate(self.ui.av):
-            print(i, key)
-            if p.value() == key:
-                break
-        print(i, key)
+        # ['no_avarage', 'simple_moving_avarage', 'DWR', 'DWR_slope_removed']
+        if p.value() == 'no_avarage':
+            print('no_avarage')
+        if p.value() == 'simple_moving_avarage':
+            print('simple_moving_avarage')
+        if p.value() == 'DWR':
+            print('DWR')
+        if p.value() == 'DWR_slope_removed':
+            print('DWR_slope_removed')
 
 
     def on_fft(self):
@@ -497,7 +507,7 @@ class Control:
                 self.ui.w3.plot(self.data.current_x, self.data.current_y, pen={'color': self.plotcolor, 'width': 1}, name='region')
                 if self.ui.p.child('moving Average').child('show deviation').value():
                     self.ui.w3.plot(self.data.x_transformed, self.data.y_devdist, pen={'color': (230, 50, 50), 'width': 3}, name='dev sec')
-                    self.ui.w3.plot(self.data.x_transformed, self.data.y_devrms, pen={'color': (200, 150, 150), 'width': 3}, name='rms sec')
+                    #self.ui.w3.plot(self.data.x_transformed, self.data.y_devrms, pen={'color': (200, 150, 150), 'width': 3}, name='rms sec')
                 self.ui.wi3.setText(self.data.wi3Text)
                 if self.ui.p.child('extend axis').child('extend data').value():
                     self.ui.w3.plot(self.data.X_extend_1, self.data.Y_extend_1, pen={'color': (100, 100, 255), 'width': 3}, name='extended_1')

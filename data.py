@@ -16,10 +16,7 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 
 # todo
 #   autodetect delimiter & dezimal separator
-#   switsch paramtree preset doesent work
-#   excel export     --> path & filename
-#   PPMAC export    --> start Stop length in filename
-#   extend data     --> eliminate offset between data and extendet values
+#   switsch paramtree preset doesen´t work
 
 
 class Data(QtCore.QObject):
@@ -299,19 +296,19 @@ class Data(QtCore.QObject):
         else:
             self.DWR = 0.0
 
-    def rms_dist(self, section, ch):
-        print('rms_dist')
-        if ch:
-            self.y_devrms = np.arange(len(self.y_filtered)) * np.nan  # y_div dist!!!
-
-            for i in range(len(self.y_filtered) - int(section)):
-                y_arr = self.y_filtered[i:i + int(section)]
-                self.y_devrms[i + int(section / 2)] = np.sqrt(np.mean(np.square(y_arr)))  #max(y_arr) - min(y_arr)
-            x = self.y_devrms
-            x = x[~np.isnan(x)]
-            self.RMS = '\n' + 'RMS = ' + str(max(x))
-        else:
-            self.RMS = '---'
+    # def rms_dist(self, section, ch):
+    #     print('rms_dist')
+    #     if ch:
+    #         self.y_devrms = np.arange(len(self.y_filtered)) * np.nan  # y_div dist!!!
+    #
+    #         for i in range(len(self.y_filtered) - int(section)):
+    #             y_arr = self.y_filtered[i:i + int(section)]
+    #             self.y_devrms[i + int(section / 2)] = np.sqrt(np.mean(np.square(y_arr)))  #max(y_arr) - min(y_arr)
+    #         x = self.y_devrms
+    #         x = x[~np.isnan(x)]
+    #         self.RMS = '\n' + 'RMS = ' + str(max(x))
+    #     else:
+    #         self.RMS = '---'
 
 
     # todo fft log scale Y ?
@@ -333,7 +330,6 @@ class Data(QtCore.QObject):
 
     def spectrogram(self, length, overlap, win, log_z_scale):
         print('spectrogram')
-        print('win = ', win)
         f, t, Sxx = signal.spectrogram(self.y_filtered, fs=(1 / self.T), nperseg=length, noverlap=overlap, window=win, scaling='spectrum')
         Sxx = np.sqrt(Sxx)  # from V**2 to V
         Sxx = np.transpose(Sxx)
@@ -342,47 +338,53 @@ class Data(QtCore.QObject):
         return f, t, Sxx
 
     def extend(self, minus, plus, fit_minus, fit_plus, fit):
-            print('extend')
-            l_minus = int(fit_minus / self.T)
-            l_plus = int(fit_plus / self.T)
-            self.X_fit_1 = self.current_x[: l_minus]
-            self.X_fit_2 = self.current_x[-l_plus:]
-            self.Y_fit_1 = self.y_filtered[: l_minus]
-            self.Y_fit_2 = self.y_filtered[-l_plus:]
-            print('minus = ', minus, '   self.current_x[0] = ', self.current_x[0], ' self.T = ', self.T)
-            self.X_extend_1 = np.arange(minus, self.current_x[0], self.T)
-            self.X_extend_2 = np.arange(self.current_x[-1] + self.T, plus, self.T)
-            if fit == 'flat':
-                self.Y_extend_1 = np.full(len(self.X_extend_1), self.y_filtered[0])
-                self.Y_extend_2 = np.full(len(self.X_extend_2), self.y_filtered[-1])
-            if fit == 'linear':
-                popt_1, pcov_1 = curve_fit(self.lin_func, self.X_fit_1, self.Y_fit_1)
-                popt_2, pcov_2 = curve_fit(self.lin_func, self.X_fit_2, self.Y_fit_2)
-                self.Y_extend_1 = self.lin_func(self.X_extend_1, *popt_1)
-                self.Y_extend_2 = self.lin_func(self.X_extend_2, *popt_2)
-            if fit == 'quadratic':
-                popt_1, pcov_1 = curve_fit(self.qadr_func, self.X_fit_1, self.Y_fit_1)
-                popt_2, pcov_2 = curve_fit(self.qadr_func, self.X_fit_2, self.Y_fit_2)
-                self.Y_extend_1 = self.qadr_func(self.X_extend_1, *popt_1)
-                self.Y_extend_2 = self.qadr_func(self.X_extend_2, *popt_2)
-            if fit == 'cubic':
-                popt_1, pcov_1 = curve_fit(self.cube_func, self.X_fit_1, self.Y_fit_1)
-                popt_2, pcov_2 = curve_fit(self.cube_func, self.X_fit_2, self.Y_fit_2)
-                self.Y_extend_1 = self.cube_func(self.X_extend_1, *popt_1)
-                self.Y_extend_2 = self.cube_func(self.X_extend_2, *popt_2)
-            if fit == 'sin':
-                popt_1, pcov_1 = curve_fit(self.sin_func, self.X_fit_1, self.Y_fit_1)
-                popt_2, pcov_2 = curve_fit(self.sin_func, self.X_fit_2, self.Y_fit_2)
-                self.Y_extend_1 = self.sin_func(self.X_extend_1, *popt_1)
-                self.Y_extend_2 = self.sin_func(self.X_extend_2, *popt_2)
-            if fit == 'exp':
-                popt_1, pcov_1 = curve_fit(self.exp_func, self.X_fit_1, self.Y_fit_1)
-                popt_2, pcov_2 = curve_fit(self.exp_func, self.X_fit_2, self.Y_fit_2)
-                self.Y_extend_1 = self.exp_func(self.X_extend_1, *popt_1)
-                self.Y_extend_2 = self.exp_func(self.X_extend_2, *popt_2)
-            self.extend_array = np.append(self.Y_extend_1, self.y_filtered)
-            self.extend_array = np.append(self.extend_array, self.Y_extend_2)
-            self.extend_info = '\n' + '\n' + ' T = ' + str(self.T) + '\n' + ' N_ext = ' + str(len(self.extend_array))
+        # todo extend offset evtl manuell einstellen ?
+        print('extend')
+        l_minus = int(fit_minus / self.T)
+        l_plus = int(fit_plus / self.T)
+        self.X_fit_1 = self.current_x[: l_minus]
+        self.X_fit_2 = self.current_x[-l_plus:]
+        self.Y_fit_1 = self.y_filtered[: l_minus]
+        self.Y_fit_2 = self.y_filtered[-l_plus:]
+        print('minus = ', minus, '   self.current_x[0] = ', self.current_x[0], ' self.T = ', self.T)
+        self.X_extend_1 = np.arange(minus, self.current_x[0], self.T)
+        self.X_extend_2 = np.arange(self.current_x[-1] + self.T, plus, self.T)
+
+        if fit == 'flat':
+            self.Y_extend_1 = np.full(len(self.X_extend_1), self.y_filtered[0])
+            self.Y_extend_2 = np.full(len(self.X_extend_2), self.y_filtered[-1])
+        if fit == 'linear':
+            popt_1, pcov_1 = curve_fit(self.lin_func, self.X_fit_1, self.Y_fit_1)
+            popt_2, pcov_2 = curve_fit(self.lin_func, self.X_fit_2, self.Y_fit_2)
+            self.Y_extend_1 = self.lin_func(self.X_extend_1, *popt_1)
+            self.Y_extend_2 = self.lin_func(self.X_extend_2, *popt_2)
+        if fit == 'quadratic':
+            popt_1, pcov_1 = curve_fit(self.qadr_func, self.X_fit_1, self.Y_fit_1)
+            popt_2, pcov_2 = curve_fit(self.qadr_func, self.X_fit_2, self.Y_fit_2)
+            self.Y_extend_1 = self.qadr_func(self.X_extend_1, *popt_1)
+            self.Y_extend_2 = self.qadr_func(self.X_extend_2, *popt_2)
+        if fit == 'cubic':
+            popt_1, pcov_1 = curve_fit(self.cube_func, self.X_fit_1, self.Y_fit_1)
+            popt_2, pcov_2 = curve_fit(self.cube_func, self.X_fit_2, self.Y_fit_2)
+            self.Y_extend_1 = self.cube_func(self.X_extend_1, *popt_1)
+            self.Y_extend_2 = self.cube_func(self.X_extend_2, *popt_2)
+        if fit == 'sin':
+            popt_1, pcov_1 = curve_fit(self.sin_func, self.X_fit_1, self.Y_fit_1)
+            popt_2, pcov_2 = curve_fit(self.sin_func, self.X_fit_2, self.Y_fit_2)
+            self.Y_extend_1 = self.sin_func(self.X_extend_1, *popt_1)
+            self.Y_extend_2 = self.sin_func(self.X_extend_2, *popt_2)
+        if fit == 'exp':
+            popt_1, pcov_1 = curve_fit(self.exp_func, self.X_fit_1, self.Y_fit_1)
+            popt_2, pcov_2 = curve_fit(self.exp_func, self.X_fit_2, self.Y_fit_2)
+            self.Y_extend_1 = self.exp_func(self.X_extend_1, *popt_1)
+            self.Y_extend_2 = self.exp_func(self.X_extend_2, *popt_2)
+
+        self.extend_array = np.append(self.Y_extend_1, self.y_filtered)
+        self.extend_array = np.append(self.extend_array, self.Y_extend_2)
+        self.extend_info = '\n' + '\n' + ' T = ' + str(self.T) + '\n' + ' N_ext = ' + str(len(self.extend_array))
+
+
+
     def lin_func(self, x, a, b, c, d):
         return a*x+b
 
@@ -413,7 +415,6 @@ class Data(QtCore.QObject):
         file.close()
 
     def excel_export(self,children , dws, ex_lin, section):
-        # todo evtl. include export with extend ??
         dirname = os.path.dirname(self.filepath)
         exportfile = os.path.basename(self.filepath)
         exportfile = str(os.path.splitext(exportfile)[0])
