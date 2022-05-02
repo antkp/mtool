@@ -36,7 +36,7 @@ class UI:
                 {'name': 'x-col', 'type': 'list', 'values': [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
                  'value': 2, 'limits': (-1, 15), 'step': 1, 'tip': 'select row number for X values (first row = 0) \n -1 --> n_th value'},
                 {'name': 'y-col', 'type': 'list', 'values': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                 'value': 1, 'limits': (0, 15), 'step': 1, 'tip': "select row number for Y values (first row = 0)"},
+                 'value': 0, 'limits': (0, 15), 'step': 1, 'tip': "select row number for Y values (first row = 0)"},
                 {'name': 'use every n^th row', 'type': 'int', 'value': 1, 'limits': (1, 1000), 'step': 1},
                 {'name': 'lengths compensation', 'type': 'bool', 'value': False, 'tip': "for measurements like x(x)"},
                 {'name': 'enter', 'type': 'action', 'visible': True}]},

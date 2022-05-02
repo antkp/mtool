@@ -435,7 +435,10 @@ class Control:
             dws = self.ui.p.child('moving Average').child('show deviation').value()
             ex_lin = self.ui.p.child('moving Average').child('exclude linear proportion').value()
             section = self.ui.p.child('moving Average').child('section').value()
-            self.data.excel_export(dws, ex_lin, section)
+
+            #children = self.ui.p.children()
+            children = self.ui.p.getValues()
+            self.data.excel_export(children, dws, ex_lin, section)
 
     def on_polar(self):
         print('on_polar')

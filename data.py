@@ -15,7 +15,9 @@ from scipy import stats
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 # todo
-#   exel export     --> path & filename
+#   autodetect delimiter & dezimal separator
+#   switsch paramtree preset doesent work
+#   excel export     --> path & filename
 #   PPMAC export    --> start Stop length in filename
 #   extend data     --> eliminate offset between data and extendet values
 
@@ -26,7 +28,7 @@ class Data(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.filepath = ''
-        self.DWR = ''
+        self.DWR = 0.0
         self.RMS = ''
         self.head = 0
         self.delimiter = ','
@@ -90,6 +92,17 @@ class Data(QtCore.QObject):
         self.wi4Text = ''
         self.extend_info = ''
         self.fund_info = ''
+        self.val_dict = {
+            "N": 0,
+            "t": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "p2v": 0.0,
+            "RMS": 0.0,
+            "P2V_moving": 0.0,
+            'DWS': 0.0}
+
+
 
     def selectfile(self, path):
 
@@ -275,16 +288,16 @@ class Data(QtCore.QObject):
                     self.y_devdist[i + int(section / 2)] = np.ptp(y_reg)
                 x = self.y_devdist
                 x = x[~np.isnan(x)]
-                self.DWR = '\n' + 'DWRL = ' + str(max(x))
+                self.DWR = max(x)
             else:
                 for i in range(len(self.y_filtered) - int(section)):
                     y_arr = self.y_filtered[i:i + int(section)]
                     self.y_devdist[i + int(section / 2)] = np.ptp(y_arr)
                 x = self.y_devdist
                 x = x[~np.isnan(x)]
-                self.DWR = '\n' + 'DWR = ' + str(max(x))
+                self.DWR = max(x)
         else:
-            self.DWR = '---'
+            self.DWR = 0.0
 
     def rms_dist(self, section, ch):
         print('rms_dist')
@@ -399,7 +412,7 @@ class Data(QtCore.QObject):
         np.savetxt(file, self.extend_array.reshape(-1, 1), delimiter=',', fmt='%10.9f')
         file.close()
 
-    def excel_export(self, dws, ex_lin, section):
+    def excel_export(self,children , dws, ex_lin, section):
         # todo evtl. include export with extend ??
         dirname = os.path.dirname(self.filepath)
         exportfilename = os.path.basename(self.filepath)
@@ -411,9 +424,16 @@ class Data(QtCore.QObject):
         export_filename = pg.FileDialog.getSaveFileName(None, "export file as", expfile, "EXCEL files (*.xlsx)")
 
         workbook = Workbook(str(export_filename[0]))
-        worksheet = workbook.add_worksheet()  # Required for the chart data.
-        worksheet.write_column('A1', self.current_x)
-        worksheet.write_column('B1', self.current_y)
+
+        worksheet1 = workbook.add_worksheet()  # Required for the chart data.
+        worksheet1.write_column('A1', self.current_x)
+        worksheet1.write_column('B1', self.current_y)
+
+        i = 0
+        for key, value in self.val_dict.items():
+            worksheet1.write(i, 14, key)
+            worksheet1.write(i, 15, value)
+            i = i+1
 
         chart_1 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
         chart_1.add_series({
@@ -431,14 +451,12 @@ class Data(QtCore.QObject):
                       'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
         #chart_1.set_legend({'position': 'top'})
         chart_1.set_legend({'none': True})
-        worksheet.insert_chart('D2', chart_1)
+        worksheet1.insert_chart('D2', chart_1)
 
         if dws:
-            print('läuft')
-            print(self.y_devdist)
             for row, data in enumerate(self.y_devdist):
                 try:
-                    worksheet.write(row, 2, data)
+                    worksheet1.write(row, 2, data)
                 except:
                     pass
             chart_2 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
@@ -457,7 +475,15 @@ class Data(QtCore.QObject):
                               'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color': '#808080', }}, })
             #chart_2.set_legend({'position': 'top'})
             chart_2.set_legend({'none': True})
-            worksheet.insert_chart('D18', chart_2)
+            worksheet1.insert_chart('D18', chart_2)
+
+        worksheet2 = workbook.add_worksheet()
+
+        i = 0
+        for key, value in children.items():
+            worksheet2.write(i, 1, key)
+            worksheet2.write(i, 3, str(value))
+            i = i+1
 
         workbook.close()
 
@@ -506,20 +532,31 @@ class Data(QtCore.QObject):
 
     def info_w3(self):
         print('info_w3')
+
+        self.val_dict = {
+            "N": len(self.current_y),
+            "t": round(len(self.current_y) * self.T, 6),
+            "min": round(min(self.current_y), 6),
+            "max": round(max(self.current_y), 6),
+            "p2v": round(self.p2v, 6),
+            "RMS": round(self.rms(self.current_y), 6),
+            "P2V_moving": 0.0,
+            'DWS': self.DWR}
+
         self.p2v = round(max(self.current_y) - min(self.current_y), 8)
         self.T = round(self.x_transformed[2] - self.x_transformed[1], 8)
         self.wi3Text = \
                  '\n' + \
-                 ' N = '   + str(      len(self.current_y)) + '\n' + \
+                 self.wi3Pos +\
+                 ' N = '   + str(len(self.current_y)) + '\n' + \
                  ' t = '   + str(round(len(self.current_y) * self.T, 6)) + '\n' + '\n' + \
                  ' min = ' + str(round(min(self.current_y), 6)) + '\n' + \
                  ' max = ' + str(round(max(self.current_y), 6)) + '\n' + \
                  ' p2v = ' + str(round(self.p2v, 6)) + '\n' + \
-                 ' RMS = ' + str(round(self.rms(self.current_y), 6)) + '\n' +\
-                 ' N = '   + str(len(self.current_y)) + '\n' + \
-                 ' t = '   + str(round(len(self.current_y) * self.T, 6)) + '\n' + '\n' + \
-                 self.wi3Pos + self.DWR + self.RMS + '\n' + '\n' + \
-                 self.extend_info + '\n' + '\n' + \
+                 ' RMS = ' + str(round(self.rms(self.current_y), 6)) + '\n' + '\n' + '\n' +\
+                  'DWR = ' + str(round(self.DWR, 6)) + '\n' +\
+                 self.RMS + '\n' + \
+                 self.extend_info + '\n' + \
                  self.fund_info
 
     def info_w4(self):
