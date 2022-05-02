@@ -17,7 +17,7 @@ class UI:
                            [1.0, 2.3833, 1.8534, 2.002, 4.6433],  # amplitudeCorrection
                            [1.0, 1.97, 1.59, 1.63, 2.26]]  # energyCorrection
 
-        self.avarage_arr = ['no_avarage', 'simple_moving_avarage', 'DWR', 'DWR_slope_removed']
+        self.average_arr = ['no_avarage', 'simple_moving_avarage', 'DWR', 'DWR_slope_removed']
 
         self.params = \
             [
@@ -28,9 +28,9 @@ class UI:
             {'name': 'config data', 'type': 'group', 'expanded': True, 'visible': True, 'children': [
                 {'name': 'head rows', 'type': 'int', 'value': 6, 'limits': (0, 20), 'tip': "ignore first rows of data head"},
                 {'name': 'delimiter', 'type': 'list', 'values': {'tab':'\t', 'semicolon':';', 'comma':','},
-                 'value': ';', 'tip': 'delimiter between columns'},
+                 'value': '\t', 'tip': 'delimiter between columns'},
                 {'name': 'decimal separator', 'type': 'list', 'values': {'comma': ',', 'point':'.'},
-                 'value': ',', 'tip': 'decimal separator'},
+                 'value': '.', 'tip': 'decimal separator'},
                 {'name': 'x-col', 'type': 'list', 'values': [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
                  'value': 2, 'limits': (-1, 15), 'step': 1, 'tip': 'select row number for X values (first row = 0) \n -1 --> n_th value'},
                 {'name': 'y-col', 'type': 'list', 'values': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -70,13 +70,11 @@ class UI:
                 {'name': 'lowess', 'type': 'group', 'expanded': True, 'visible': False, 'tip': 'https://www.statsmodels.org/stable/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html', 'children': [
                     {'name': 'fraction', 'type': 'float', 'value': 0.025, 'limits': (0.0, 1.0), 'step': 0.01},
                     {'name': 'iteration', 'type': 'int', 'value': 0, 'limits': (0, 5), 'step': 1}]}]},
-            {'name': 'moving Average', 'type': 'group', 'expanded': True, 'visible': True, 'tip': 'größte Abweichung (ohne linearen Anteil) innerhalb eines Bereiches', 'children': [
-                {'name': 'show deviation', 'type': 'bool', 'value': False, 'tip': "plot "},
-
-                {'name': 'Average', 'type': 'list', 'values': self.avarage_arr,
+            {'name': 'moving average', 'type': 'group', 'expanded': True, 'visible': True, 'tip': 'größte Abweichung (ohne linearen Anteil) innerhalb eines Bereiches', 'children': [
+                #{'name': 'show deviation', 'type': 'bool', 'value': False, 'tip': "plot "},
+                {'name': 'average', 'type': 'list', 'values': self.average_arr,
                  'value': 'no avarage', 'tip': 'https://en.wikipedia.org/wiki/Moving_average'},
-
-                {'name': 'exclude linear proportion', 'type': 'bool', 'value': False, 'tip': "include linear proportion within section"},
+                #{'name': 'exclude linear proportion', 'type': 'bool', 'value': False, 'tip': "include linear proportion within section"},
                 {'name': 'section', 'type': 'int', 'value': 100}]},
             {'name': 'extend axis', 'type': 'group', 'expanded': True, 'visible': True, 'children': [
                 {'name': 'extend data', 'type': 'bool', 'value': False},
@@ -213,3 +211,28 @@ class UI:
         self.plottext = pg.TextItem()
         self.plottext.setFont(font)
         self.plottext.setPos(0.0, 0.9)
+
+        # children = self.p.getValues()
+        # i=0
+        # for key, value in children.items():
+        #     print(i, key)
+        #     print(i, str(value))
+        #     i = i+1
+
+
+
+        self.i_column = 0
+        self.i_row = 0
+        def treech(p):
+            if p.hasChildren():
+                self.i_row = self.i_row + 1
+                print('row =', self.i_row, ' column', self.i_column, ' BRANCH name = ', p.name())
+                self.i_column = self.i_column + 1
+                for key in p.children():
+                    treech(p.child(key.name()))
+                self.i_column = self.i_column -1
+            else:
+                self.i_row = self.i_row + 1
+                print('row =', self.i_row, 'column', self.i_column, ' name = ', p.name(), ' value =', p.value())
+
+        treech(self.p)

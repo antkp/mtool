@@ -72,6 +72,7 @@ class Data(QtCore.QObject):
         self.extend_array = []
         self.y_fund = []
 
+
         self.circleMax = pg.QtGui.QGraphicsEllipseItem()
         self.circleMid = pg.QtGui.QGraphicsEllipseItem()
         self.circleMin = pg.QtGui.QGraphicsEllipseItem()
@@ -296,6 +297,12 @@ class Data(QtCore.QObject):
         else:
             self.DWR = 0.0
 
+    def moving_average(self, section):
+        for i in range(len(self.y_filtered) - int(section)):
+            y_arr = self.y_filtered[i:i + int(section)]
+            self.y_devdist[i + int(section / 2)] = np.sum(y_arr)/len(y_arr)
+
+
     # def rms_dist(self, section, ch):
     #     print('rms_dist')
     #     if ch:
@@ -414,7 +421,9 @@ class Data(QtCore.QObject):
         np.savetxt(file, self.extend_array.reshape(-1, 1), delimiter=',', fmt='%10.9f')
         file.close()
 
-    def excel_export(self,children , dws, ex_lin, section):
+
+# todo wegen dws exs anpassen
+    def excel_export(self, p , av, section):
         dirname = os.path.dirname(self.filepath)
         exportfile = os.path.basename(self.filepath)
         exportfile = str(os.path.splitext(exportfile)[0])
@@ -432,7 +441,6 @@ class Data(QtCore.QObject):
         worksheet1.write_column('B2', self.current_y)
         worksheet1.write('B1', exportfilename)
         #worksheet1.write('B2', self.current_y)
-
 
         i = 0
         for key, value in self.val_dict.items():
@@ -458,7 +466,7 @@ class Data(QtCore.QObject):
         chart_1.set_legend({'none': True})
         worksheet1.insert_chart('D2', chart_1)
 
-        if dws:
+        if av:
             for row, data in enumerate(self.y_devdist):
                 try:
                     worksheet1.write(row, 2, data)
@@ -483,14 +491,42 @@ class Data(QtCore.QObject):
             worksheet1.insert_chart('D18', chart_2)
 
         worksheet2 = workbook.add_worksheet('config')
-
-        i = 0
-        for key, value in children.items():
-            worksheet2.write(i, 1, key)
-            worksheet2.write(i, 3, str(value))
-            i = i+1
-
+        self.i_column = 0
+        self.i_row = 0
+        self.treech(p, worksheet2)
         workbook.close()
+
+        # i = 0
+        # for key, value in children.items():
+        #     worksheet2.write(i, 1, key)
+        #     worksheet2.write(i, 3, str(value))
+        #     i = i+1
+
+    def treech(self, p , sheet):
+        if p.hasChildren():
+            self.i_row = self.i_row + 1
+            print('row =', self.i_row, ' column', self.i_column, ' BRANCH name = ', p.name())
+            sheet.write(self.i_row, self.i_column, p.name())
+            self.i_column = self.i_column + 1
+            for key in p.children():
+                self.treech(p.child(key.name()), sheet)
+            self.i_column = self.i_column - 1
+        else:
+            self.i_row = self.i_row + 1
+            print('row =', self.i_row, 'column', self.i_column, ' name = ', p.name(), ' value =', p.value())
+            sheet.write(self.i_row, self.i_column, p.name())
+            sheet.write(self.i_row, self.i_column + 1, str(p.value()))
+
+
+
+
+
+
+
+
+
+
+
 
 
     def polar(self, n, coeff, angle, remove_f, show_f):
