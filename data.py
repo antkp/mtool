@@ -71,6 +71,7 @@ class Data(QtCore.QObject):
         self.minus_extend = []
         self.extend_array = []
         self.y_fund = []
+        self.y_devdist = []
 
 
         self.circleMax = pg.QtGui.QGraphicsEllipseItem()
@@ -122,39 +123,32 @@ class Data(QtCore.QObject):
         text = open(self.filepath, 'r').read()
         if self.separator == ',':
             text = text.replace(',', '.')
-            print(len(text))
         p = text.find('0;0;0;0;0;')
         text = text[0:p]
         text = text.replace('nan', '0')
         temp_file = open("temp", "w+")
         temp_file.write(text)
-
         if self.xcol != -1:
-            print('xcol = ', self.xcol)
             if self.nthval != 1:
-                print('nthval = ', self.nthval)
                 with open('temp') as f_in:
                     data = np.genfromtxt(itertools.islice(f_in, 0, None, self.nthval), skip_header=self.head,
                                 delimiter=self.delimiter, usecols=[self.xcol, self.ycol], autostrip=True)
             else:
-                print('nthval ++ = ', self.nthval)
                 data = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter,
                                 usecols=[self.xcol, self.ycol], autostrip=True)
 
             self.x_raw = data[:, 0]
             self.y_raw = data[:, 1]
         else:
-            print('xcol ## = ', self.xcol)
             if self.nthval != 1:
-                print('nthval = ', self.nthval)
                 with open('temp') as f_in:
                     self.y_raw = np.genfromtxt(itertools.islice(f_in, 0, None, self.nthval), skip_header=self.head,
                                 delimiter=self.delimiter, usecols=[self.ycol], autostrip=True)
             else:
-                print('nthval ++ = ', self.nthval)
-                print('###___###')
-                self.y_raw = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter,
-                                usecols=[self.ycol], autostrip=True)
+                print('self.xcol = ',  self.xcol)
+                print('self.ycol = ', self.ycol)
+                self.y_raw = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter, usecols=[self.ycol], autostrip=True)
+                print('self.y_raw = ', self.y_raw)
 
             self.x_raw = np.arange(start=0, stop=len(self.y_raw))
 
@@ -298,24 +292,16 @@ class Data(QtCore.QObject):
             self.DWR = 0.0
 
     def moving_average(self, section):
+        print('moving average')
+        self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
+        print('len(self.y_devdist) = ', len(self.y_devdist))
         for i in range(len(self.y_filtered) - int(section)):
             y_arr = self.y_filtered[i:i + int(section)]
-            self.y_devdist[i + int(section / 2)] = np.sum(y_arr)/len(y_arr)
-
-
-    # def rms_dist(self, section, ch):
-    #     print('rms_dist')
-    #     if ch:
-    #         self.y_devrms = np.arange(len(self.y_filtered)) * np.nan  # y_div dist!!!
-    #
-    #         for i in range(len(self.y_filtered) - int(section)):
-    #             y_arr = self.y_filtered[i:i + int(section)]
-    #             self.y_devrms[i + int(section / 2)] = np.sqrt(np.mean(np.square(y_arr)))  #max(y_arr) - min(y_arr)
-    #         x = self.y_devrms
-    #         x = x[~np.isnan(x)]
-    #         self.RMS = '\n' + 'RMS = ' + str(max(x))
-    #     else:
-    #         self.RMS = '---'
+            self.y_devdist[i + int(section / 2)] = np.sum(y_arr) #/len(y_arr)
+        print('self.y_devdist = ', self.y_devdist[-1])
+        x = self.y_devdist
+        x = x[~np.isnan(x)]
+        self.DWR = max(x)
 
 
     # todo fft log scale Y ?
@@ -516,18 +502,6 @@ class Data(QtCore.QObject):
             print('row =', self.i_row, 'column', self.i_column, ' name = ', p.name(), ' value =', p.value())
             sheet.write(self.i_row, self.i_column, p.name())
             sheet.write(self.i_row, self.i_column + 1, str(p.value()))
-
-
-
-
-
-
-
-
-
-
-
-
 
     def polar(self, n, coeff, angle, remove_f, show_f):
         self.fund_info = ''

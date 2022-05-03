@@ -17,7 +17,7 @@ class UI:
                            [1.0, 2.3833, 1.8534, 2.002, 4.6433],  # amplitudeCorrection
                            [1.0, 1.97, 1.59, 1.63, 2.26]]  # energyCorrection
 
-        self.average_arr = ['no_avarage', 'simple_moving_avarage', 'DWR', 'DWR_slope_removed']
+        self.average_arr = ['no_average', 'simple_moving_average', 'DWR', 'DWR_slope_removed']
 
         self.params = \
             [
@@ -200,8 +200,6 @@ class UI:
         self.w5vLine = pg.InfiniteLine(angle=90, pen={'color': (100, 100, 100), 'width': 1}, movable=False)
         self.w5hLine = pg.InfiniteLine(angle=0, pen={'color': (100, 100, 100), 'width': 1}, movable=False)
 
-        # self.ra = pg.LineROI([0, 0], [-10, -10], width=1, pen=(1, 9))
-        # self.w5.view.addItem(self.ra)
         self.w5.ui.histogram.show()
         self.w5.ui.roiBtn.hide()
         self.w5.ui.menuBtn.hide()
@@ -211,28 +209,3 @@ class UI:
         self.plottext = pg.TextItem()
         self.plottext.setFont(font)
         self.plottext.setPos(0.0, 0.9)
-
-        # children = self.p.getValues()
-        # i=0
-        # for key, value in children.items():
-        #     print(i, key)
-        #     print(i, str(value))
-        #     i = i+1
-
-
-
-        self.i_column = 0
-        self.i_row = 0
-        def treech(p):
-            if p.hasChildren():
-                self.i_row = self.i_row + 1
-                print('row =', self.i_row, ' column', self.i_column, ' BRANCH name = ', p.name())
-                self.i_column = self.i_column + 1
-                for key in p.children():
-                    treech(p.child(key.name()))
-                self.i_column = self.i_column -1
-            else:
-                self.i_row = self.i_row + 1
-                print('row =', self.i_row, 'column', self.i_column, ' name = ', p.name(), ' value =', p.value())
-
-        treech(self.p)
