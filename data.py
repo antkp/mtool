@@ -26,6 +26,7 @@ class Data(QtCore.QObject):
         super().__init__()
         self.filepath = ''
         self.av_section_info = ''
+        self.av_name = ''
         self.RMS = ''
         self.head = 0
         self.delimiter = ','
@@ -268,34 +269,38 @@ class Data(QtCore.QObject):
     def lowess(self, fraction, iteration):
         f_control = 'active filter: lowess - fraction=' + str(fraction) + ' iteration=' + str(iteration)
         print('in lowess ' + str(fraction) + ' ' + str(iteration))
-        self.y_filtered = lowess(self.y_transformed, np.arange(len(self.y_transformed)), is_sorted=True, frac=fraction, it=iteration)
+        self.y_filtered = lowess(self.y_transformed, np.arange(len(self.y_transformed)), is_sorted=True, frac=fraction,
+                                 it=iteration)
         self.y_filtered = self.y_filtered[:, 1]
         self.current_y = self.y_filtered
         return f_control
 
     def simple_moving_average(self, section):
         print('simple_moving_average')
+        self.av_name = 'simple_moving_average'
         self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
         for i in range(len(self.y_filtered) - int(section)):
             y_arr = self.y_filtered[i:i + int(section)]
             self.y_devdist[i + int(section / 2)] = np.sum(y_arr)/len(y_arr)
         x = self.y_devdist
         x = x[~np.isnan(x)]
-        self.av_section_info = 'simple moving average' + '\n max= ' + str(round(max(x), 6)) + '\n min= ' + str(round(min(x), 6)) + \
-                               '\n p2v= ' + str(round(max(x)-min(x), 6))
+        self.av_section_info = self.av_name + '\n max= ' + str(round(max(x), 6)) + '\n min= ' +\
+                               str(round(min(x), 6)) + '\n p2v= ' + str(round(max(x)-min(x), 6))
 
     def moving_p2v(self,  section):
         print('moving_p2v')
+        self.av_name = 'moving_p2v'
         self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
         for i in range(len(self.y_filtered) - int(section)):
             y_arr = self.y_filtered[i:i + int(section)]
             self.y_devdist[i + int(section / 2)] = np.ptp(y_arr)
         x = self.y_devdist
         x = x[~np.isnan(x)]
-        self.av_section_info = 'moving p2v' + '\n max= ' + str(round(max(x), 6))
+        self.av_section_info = self.av_name + '\n max= ' + str(round(max(x), 6))
 
     def moving_p2v_no_slope(self, section):
         print('moving_p2v_no_slope')
+        self.av_name = 'moving_p2v_no_slope'
         self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
         for i in range(len(self.y_filtered) - int(section)):
             y_arr = self.y_filtered[i:i + int(section)]
@@ -304,7 +309,7 @@ class Data(QtCore.QObject):
             self.y_devdist[i + int(section / 2)] = np.ptp(y_reg)
         x = self.y_devdist
         x = x[~np.isnan(x)]
-        self.av_section_info = 'moving p2v slope removed' + '\n max= ' + str(round(max(x), 6))
+        self.av_section_info = self.av_name + '\n max= ' + str(round(max(x), 6))
 
     # todo fft log scale Y ?
     def fft(self, win, win_coeff):
@@ -406,7 +411,6 @@ class Data(QtCore.QObject):
         np.savetxt(file, self.extend_array.reshape(-1, 1), delimiter=',', fmt='%10.9f')
         file.close()
 
-# todo wegen dws exs anpassen
     def excel_export(self, p , av, section):
         dirname = os.path.dirname(self.filepath)
         exportfile = os.path.basename(self.filepath)
@@ -420,11 +424,9 @@ class Data(QtCore.QObject):
 
         worksheet1 = workbook.add_worksheet(exportfile)  # Required for the chart data.
         worksheet1.write_column('A2', self.current_x)
-        worksheet1.write('A1', 'X')
-        #worksheet1.write('A2', self.current_x)
+        worksheet1.write('A1', 'base')
         worksheet1.write_column('B2', self.current_y)
         worksheet1.write('B1', exportfilename)
-        #worksheet1.write('B2', self.current_y)
 
         i = 0
         for key, value in self.val_dict.items():
@@ -453,15 +455,16 @@ class Data(QtCore.QObject):
         if av:
             for row, data in enumerate(self.y_devdist):
                 try:
-                    worksheet1.write(row, 2, data)
+                    worksheet1.write_column('C2', data)
+                    worksheet1.write('C1', self.av_name + exportfilename)
                 except:
                     pass
             chart_2 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
             chart_2.add_series({
-                'name': "dws "+ exportfilename,
+                'name': self.av_name + exportfilename,
                 'line': {'width': 1, 'color': '#C00000'},
-                'categories': '='+exportfile+'!$A$1:$A$' + str(len(self.current_x)),
-                'values': '='+exportfile+'!$C$1:$C$' + str(len(self.current_x))})
+                'categories': '=' + exportfile + '!$A$2:$A$' + str(len(self.current_x)),
+                'values': '=' + exportfile + '!$C$2:$C$' + str(len(self.current_x))})
 
             chart_2.set_size({'width': 604.5, 'height': 312.41})
             chart_2.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})

@@ -430,7 +430,7 @@ class Control:
         print('on_export_excel')
         with pg.BusyCursor():
             section = self.ui.p.child('moving section').child('section').value()
-            if self.ui.p.child('moving section').child('average').value() != 'no_average':
+            if self.ui.p.child('moving section').child('average').value() != '- none -':
                 av = True
             else:
                 av = False
