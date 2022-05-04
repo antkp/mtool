@@ -25,7 +25,7 @@ class Data(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.filepath = ''
-        self.DWR = 0.0
+        self.av_section_info = ''
         self.RMS = ''
         self.head = 0
         self.delimiter = ','
@@ -97,8 +97,7 @@ class Data(QtCore.QObject):
             "max": 0.0,
             "p2v": 0.0,
             "RMS": 0.0,
-            "P2V_moving": 0.0,
-            'DWS': 0.0}
+            'sec_info': 0.0}
 
 
 
@@ -274,29 +273,6 @@ class Data(QtCore.QObject):
         self.current_y = self.y_filtered
         return f_control
 
-    # def dev_dist(self, lin_prop, section, ch): #self.data.dev_dist(lin_prop, section,True)
-    #     print('dev_dist')
-    #     if ch:
-    #         self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
-    #         if lin_prop:
-    #             for i in range(len(self.y_filtered) - int(section)):
-    #                 y_arr = self.y_filtered[i:i + int(section)]
-    #                 x_arr = self.x_transformed[i:i + int(section)]
-    #                 y_reg = self.linreg(x_arr, y_arr)
-    #                 self.y_devdist[i + int(section / 2)] = np.ptp(y_reg)
-    #             x = self.y_devdist
-    #             x = x[~np.isnan(x)]
-    #             self.DWR = max(x)
-    #         else:
-    #             for i in range(len(self.y_filtered) - int(section)):
-    #                 y_arr = self.y_filtered[i:i + int(section)]
-    #                 self.y_devdist[i + int(section / 2)] = np.ptp(y_arr)
-    #             x = self.y_devdist
-    #             x = x[~np.isnan(x)]
-    #             self.DWR = max(x)
-    #     else:
-    #         self.DWR = 0.0
-
     def simple_moving_average(self, section):
         print('simple_moving_average')
         self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
@@ -305,7 +281,8 @@ class Data(QtCore.QObject):
             self.y_devdist[i + int(section / 2)] = np.sum(y_arr)/len(y_arr)
         x = self.y_devdist
         x = x[~np.isnan(x)]
-        self.DWR = max(x)
+        self.av_section_info = 'simple moving average' + '\n max= ' + str(round(max(x), 6)) + '\n min= ' + str(round(min(x), 6)) + \
+                               '\n p2v= ' + str(round(max(x)-min(x), 6))
 
     def moving_p2v(self,  section):
         print('moving_p2v')
@@ -315,7 +292,7 @@ class Data(QtCore.QObject):
             self.y_devdist[i + int(section / 2)] = np.ptp(y_arr)
         x = self.y_devdist
         x = x[~np.isnan(x)]
-        self.DWR = max(x)
+        self.av_section_info = 'moving p2v' + '\n max= ' + str(round(max(x), 6))
 
     def moving_p2v_no_slope(self, section):
         print('moving_p2v_no_slope')
@@ -327,24 +304,7 @@ class Data(QtCore.QObject):
             self.y_devdist[i + int(section / 2)] = np.ptp(y_reg)
         x = self.y_devdist
         x = x[~np.isnan(x)]
-        self.DWR = max(x)
-
-
-
-    # def rms_dist(self, section, ch):
-    #     print('rms_dist')
-    #     if ch:
-    #         self.y_devrms = np.arange(len(self.y_filtered)) * np.nan  # y_div dist!!!
-    #
-    #         for i in range(len(self.y_filtered) - int(section)):
-    #             y_arr = self.y_filtered[i:i + int(section)]
-    #             self.y_devrms[i + int(section / 2)] = np.sqrt(np.mean(np.square(y_arr)))  #max(y_arr) - min(y_arr)
-    #         x = self.y_devrms
-    #         x = x[~np.isnan(x)]
-    #         self.RMS = '\n' + 'RMS = ' + str(max(x))
-    #     else:
-    #         self.RMS = '---'
-
+        self.av_section_info = 'moving p2v slope removed' + '\n max= ' + str(round(max(x), 6))
 
     # todo fft log scale Y ?
     def fft(self, win, win_coeff):
@@ -418,8 +378,6 @@ class Data(QtCore.QObject):
         self.extend_array = np.append(self.extend_array, self.Y_extend_2)
         self.extend_info = '\n' + '\n' + ' T = ' + str(self.T) + '\n' + ' N_ext = ' + str(len(self.extend_array))
 
-
-
     def lin_func(self, x, a, b, c, d):
         return a*x+b
 
@@ -435,7 +393,6 @@ class Data(QtCore.QObject):
     def exp_func(self, x, a, b, c, d):
         return a * np.exp(-b * x) + c
 
-
     def export(self, length, N, offset): # todo export to PPMAC
         print('export')
         dirname = os.path.dirname(self.filepath)
@@ -448,7 +405,6 @@ class Data(QtCore.QObject):
         file = open(export_filename[0], 'w')
         np.savetxt(file, self.extend_array.reshape(-1, 1), delimiter=',', fmt='%10.9f')
         file.close()
-
 
 # todo wegen dws exs anpassen
     def excel_export(self, p , av, section):
@@ -524,7 +480,6 @@ class Data(QtCore.QObject):
         self.treech(p, worksheet2)
         workbook.close()
 
-
     def treech(self, p , sheet):
         if p.hasChildren():
             self.i_row = self.i_row + 1
@@ -539,7 +494,6 @@ class Data(QtCore.QObject):
             print('row =', self.i_row, 'column', self.i_column, ' name = ', p.name(), ' value =', p.value())
             sheet.write(self.i_row, self.i_column, p.name())
             sheet.write(self.i_row, self.i_column + 1, str(p.value()))
-
 
     def polar(self, n, coeff, angle, remove_f, show_f):
         self.fund_info = ''
@@ -593,8 +547,7 @@ class Data(QtCore.QObject):
             "max": round(max(self.current_y), 6),
             "p2v": round(self.p2v, 6),
             "RMS": round(self.rms(self.current_y), 6),
-            "P2V_moving": 0.0,
-            'DWS': self.DWR}
+            'sec_info': self.av_section_info}
 
         self.p2v = round(max(self.current_y) - min(self.current_y), 8)
         self.T = round(self.x_transformed[2] - self.x_transformed[1], 8)
@@ -607,8 +560,7 @@ class Data(QtCore.QObject):
                  ' max = ' + str(round(max(self.current_y), 6)) + '\n' + \
                  ' p2v = ' + str(round(self.p2v, 6)) + '\n' + \
                  ' RMS = ' + str(round(self.rms(self.current_y), 6)) + '\n' + '\n' + '\n' +\
-                  'DWR = ' + str(round(self.DWR, 6)) + '\n' +\
-                 self.RMS + '\n' + \
+                 self.av_section_info + '\n' +\
                  self.extend_info + '\n' + \
                  self.fund_info
 

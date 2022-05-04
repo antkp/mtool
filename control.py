@@ -345,32 +345,11 @@ class Control:
             self.ui.w4.setTitle(self.title)
             self.on_moving_section()
 
-    # def on_deviation(self):
-    #     print('on_deviation')
-    #     with pg.BusyCursor():
-    #         if self.ui.p.child('moving section').child('show deviation').value():
-    #             lin_prop = self.ui.p.child('moving section').child('exclude linear proportion').value()
-    #             section = self.ui.p.child('moving section').child('section').value() / self.x_scale
-    #             self.data.dev_dist(lin_prop, section, True)
-    #         else:
-    #             self.data.dev_dist(False, 0, False)
-    #         self.on_fft()
-
-    # def on_moving_avarage(self, p):
-    #     print('on moving section','___',  p.value())
-    #     with pg.BusyCursor():
-    #         for i, key in enumerate(self.ui.avarage_arr):
-    #             print(i, key)
-    #             if p.value() == key:
-    #                 break
-    #         print(i, key)
-
-
     def on_moving_section(self):
         p = self.ui.p.child('moving section').child('average').value()
         if p == '- none -':
             print('- none -')
-            self.DWR = None
+            self.DWR = ''
         section = self.ui.p.child('moving section').child('section').value() / self.x_scale
         with pg.BusyCursor():
             if p == 'simple_moving_average':
@@ -379,7 +358,6 @@ class Control:
                 self.data.moving_p2v(section)
             if p == 'moving p2v no slope':
                 self.data.moving_p2v_no_slope(section)
-
         self.on_fft()
 
 
@@ -511,7 +489,6 @@ class Control:
                 self.ui.w3.plot(self.data.current_x, self.data.current_y, pen={'color': self.plotcolor, 'width': 1}, name='region')
                 if self.ui.p.child('moving section').child('average').value() != '- none -':
                     self.ui.w3.plot(self.data.x_transformed, self.data.y_devdist, pen={'color': (230, 50, 50), 'width': 3}, name='dev sec')
-                    #self.ui.w3.plot(self.data.x_transformed, self.data.y_devrms, pen={'color': (200, 150, 150), 'width': 3}, name='rms sec')
                 self.ui.wi3.setText(self.data.wi3Text)
                 if self.ui.p.child('extend axis').child('extend data').value():
                     self.ui.w3.plot(self.data.X_extend_1, self.data.Y_extend_1, pen={'color': (100, 100, 255), 'width': 3}, name='extended_1')
