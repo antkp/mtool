@@ -49,7 +49,7 @@ class Control:
         self.ui.p.child('config data').hide()
         self.ui.p.child('transformation').hide()
         self.ui.p.child('filter').hide()
-        self.ui.p.child('moving average').hide()
+        self.ui.p.child('moving section').hide()
         self.ui.p.child('fft').hide()
         self.ui.p.child('extend axis').hide()
         self.ui.p.child('polar plot').hide()
@@ -92,10 +92,10 @@ class Control:
         self.ui.p.child('filter').child('savitzky–golay').child('order').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('lowess').child('fraction').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('lowess').child('iteration').sigValueChanged.connect(self.on_filter)
-        #self.ui.p.child('moving average').child('show deviation').sigValueChanged.connect(self.on_moving_avarage)
-        self.ui.p.child('moving average').child('average').sigValueChanged.connect(self.on_moving_avarage)
-        #self.ui.p.child('moving average').child('exclude linear proportion').sigValueChanged.connect(self.on_moving_avarage)
-        self.ui.p.child('moving average').child('section').sigValueChanged.connect(self.on_moving_avarage)
+
+        self.ui.p.child('moving section').child('average').sigValueChanged.connect(self.on_moving_section)
+        self.ui.p.child('moving section').child('section').sigValueChanged.connect(self.on_moving_section)
+
         self.ui.p.child('fft').child('show fft').sigValueChanged.connect(self.on_fft)
         self.ui.p.child('fft').child('fft config').child('fft window').sigValueChanged.connect(self.on_fft)
         self.ui.p.child('fft').child('fft config').child('amplitude/phase').sigValueChanged.connect(self.on_fft)
@@ -124,7 +124,7 @@ class Control:
         print('on_selectbtn')
         self.ui.p.child('transformation').hide()
         self.ui.p.child('filter').hide()
-        self.ui.p.child('moving average').hide()
+        self.ui.p.child('moving section').hide()
         self.ui.p.child('fft').hide()
         self.ui.p.child('extend axis').hide()
         self.ui.p.child('polar plot').hide()
@@ -195,7 +195,7 @@ class Control:
         self.ui.p.child('config data').hide()
         self.ui.p.child('transformation').show()
         self.ui.p.child('filter').show()
-        self.ui.p.child('moving average').show()
+        self.ui.p.child('moving section').show()
         self.ui.p.child('fft').show()
         self.ui.p.child('extend axis').show()
         self.ui.p.child('polar plot').show()
@@ -343,21 +343,21 @@ class Control:
             self.ui.w2.setTitle(self.title)
             self.ui.w3.setTitle(self.title)
             self.ui.w4.setTitle(self.title)
-            self.on_moving_avarage()
+            self.on_moving_section()
 
     # def on_deviation(self):
     #     print('on_deviation')
     #     with pg.BusyCursor():
-    #         if self.ui.p.child('moving average').child('show deviation').value():
-    #             lin_prop = self.ui.p.child('moving average').child('exclude linear proportion').value()
-    #             section = self.ui.p.child('moving average').child('section').value() / self.x_scale
+    #         if self.ui.p.child('moving section').child('show deviation').value():
+    #             lin_prop = self.ui.p.child('moving section').child('exclude linear proportion').value()
+    #             section = self.ui.p.child('moving section').child('section').value() / self.x_scale
     #             self.data.dev_dist(lin_prop, section, True)
     #         else:
     #             self.data.dev_dist(False, 0, False)
     #         self.on_fft()
 
     # def on_moving_avarage(self, p):
-    #     print('on moving average','___',  p.value())
+    #     print('on moving section','___',  p.value())
     #     with pg.BusyCursor():
     #         for i, key in enumerate(self.ui.avarage_arr):
     #             print(i, key)
@@ -366,23 +366,20 @@ class Control:
     #         print(i, key)
 
 
-    def on_moving_avarage(self):
-        # ['no_avarage', 'simple_moving_avarage', 'DWR', 'DWR_slope_removed']
-        p = self.ui.p.child('moving average').child('average').value()
-        if p == 'no_average':
-            print('no_average')
-        if p == 'simple_moving_average':
-            print('simple_moving_average')
+    def on_moving_section(self):
+        p = self.ui.p.child('moving section').child('average').value()
+        if p == '- none -':
+            print('- none -')
+            self.DWR = None
+        section = self.ui.p.child('moving section').child('section').value() / self.x_scale
         with pg.BusyCursor():
-            if p == 'DWR':
-                print('DWR')
-                section = self.ui.p.child('moving average').child('section').value() / self.x_scale
-                self.data.dev_dist(False, section, True)
-        with pg.BusyCursor():
-            if p == 'DWR_slope_removed':
-                print('DWR_slope_removed')
-                section = self.ui.p.child('moving average').child('section').value() / self.x_scale
-                self.data.dev_dist(True, section, True)
+            if p == 'simple_moving_average':
+                self.data.simple_moving_average(section)
+            if p == 'moving p2v':
+                self.data.moving_p2v(section)
+            if p == 'moving p2v no slope':
+                self.data.moving_p2v_no_slope(section)
+
         self.on_fft()
 
 
@@ -454,8 +451,8 @@ class Control:
     def on_export_excel(self):
         print('on_export_excel')
         with pg.BusyCursor():
-            section = self.ui.p.child('moving average').child('section').value()
-            if self.ui.p.child('moving average').child('average').value() != 'no_average':
+            section = self.ui.p.child('moving section').child('section').value()
+            if self.ui.p.child('moving section').child('average').value() != 'no_average':
                 av = True
             else:
                 av = False
@@ -512,7 +509,7 @@ class Control:
                 self.ui.w3.plotItem.showAxis('bottom')
                 self.ui.w3.setAspectLocked(lock=False, ratio=None)
                 self.ui.w3.plot(self.data.current_x, self.data.current_y, pen={'color': self.plotcolor, 'width': 1}, name='region')
-                if self.ui.p.child('moving average').child('average').value() != 'no_avarage':
+                if self.ui.p.child('moving section').child('average').value() != '- none -':
                     self.ui.w3.plot(self.data.x_transformed, self.data.y_devdist, pen={'color': (230, 50, 50), 'width': 3}, name='dev sec')
                     #self.ui.w3.plot(self.data.x_transformed, self.data.y_devrms, pen={'color': (200, 150, 150), 'width': 3}, name='rms sec')
                 self.ui.wi3.setText(self.data.wi3Text)

@@ -17,7 +17,7 @@ class UI:
                            [1.0, 2.3833, 1.8534, 2.002, 4.6433],  # amplitudeCorrection
                            [1.0, 1.97, 1.59, 1.63, 2.26]]  # energyCorrection
 
-        self.average_arr = ['no_avarage', 'simple_moving_avarage', 'DWR', 'DWR_slope_removed']
+        self.average_arr = ['- none -', 'simple_moving_average', 'moving p2v', 'moving p2v no slope']
 
         self.params = \
             [
@@ -70,7 +70,7 @@ class UI:
                 {'name': 'lowess', 'type': 'group', 'expanded': True, 'visible': False, 'tip': 'https://www.statsmodels.org/stable/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html', 'children': [
                     {'name': 'fraction', 'type': 'float', 'value': 0.025, 'limits': (0.0, 1.0), 'step': 0.01},
                     {'name': 'iteration', 'type': 'int', 'value': 0, 'limits': (0, 5), 'step': 1}]}]},
-            {'name': 'moving average', 'type': 'group', 'expanded': True, 'visible': True, 'tip': 'größte Abweichung (ohne linearen Anteil) innerhalb eines Bereiches', 'children': [
+            {'name': 'moving section', 'type': 'group', 'expanded': True, 'visible': True, 'tip': 'größte Abweichung (ohne linearen Anteil) innerhalb eines Bereiches', 'children': [
                 #{'name': 'show deviation', 'type': 'bool', 'value': False, 'tip': "plot "},
                 {'name': 'average', 'type': 'list', 'values': self.average_arr,
                  'value': 'no avarage', 'tip': 'https://en.wikipedia.org/wiki/Moving_average'},
@@ -113,15 +113,15 @@ class UI:
 
         self.p = Parameter.create(name='params', type='group', children=self.params)
 
-        self.treefile = Path('tree.prm')
-        try:
-            self.treefile.resolve(strict=True)
-        except FileNotFoundError:
-            with open('tree.prm', 'wb') as fp:
-                pickle.dump(self.p.saveState(), fp)
-        else:
-            with open('tree.prm', 'rb') as fp:
-                 self.p.restoreState(pickle.load(fp))
+        # self.treefile = Path('tree.prm')
+        # try:
+        #     self.treefile.resolve(strict=True)
+        # except FileNotFoundError:
+        #     with open('tree.prm', 'wb') as fp:
+        #         pickle.dump(self.p.saveState(), fp)
+        # else:
+        #     with open('tree.prm', 'rb') as fp:
+        #          self.p.restoreState(pickle.load(fp))
 
         self.noneParameter = [{'name': 'none', 'type': 'bool', 'value': False}]
         self.none = Parameter.create(name='none', type='group', children=self.noneParameter)
@@ -211,28 +211,3 @@ class UI:
         self.plottext = pg.TextItem()
         self.plottext.setFont(font)
         self.plottext.setPos(0.0, 0.9)
-
-        # children = self.p.getValues()
-        # i=0
-        # for key, value in children.items():
-        #     print(i, key)
-        #     print(i, str(value))
-        #     i = i+1
-
-
-
-        self.i_column = 0
-        self.i_row = 0
-        def treech(p):
-            if p.hasChildren():
-                self.i_row = self.i_row + 1
-                print('row =', self.i_row, ' column', self.i_column, ' BRANCH name = ', p.name())
-                self.i_column = self.i_column + 1
-                for key in p.children():
-                    treech(p.child(key.name()))
-                self.i_column = self.i_column -1
-            else:
-                self.i_row = self.i_row + 1
-                print('row =', self.i_row, 'column', self.i_column, ' name = ', p.name(), ' value =', p.value())
-
-        treech(self.p)

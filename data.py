@@ -274,33 +274,61 @@ class Data(QtCore.QObject):
         self.current_y = self.y_filtered
         return f_control
 
-    def dev_dist(self, lin_prop, section, ch): #self.data.dev_dist(lin_prop, section,True)
-        print('dev_dist')
-        if ch:
-            self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
-            if lin_prop:
-                for i in range(len(self.y_filtered) - int(section)):
-                    y_arr = self.y_filtered[i:i + int(section)]
-                    x_arr = self.x_transformed[i:i + int(section)]
-                    y_reg = self.linreg(x_arr, y_arr)
-                    self.y_devdist[i + int(section / 2)] = np.ptp(y_reg)
-                x = self.y_devdist
-                x = x[~np.isnan(x)]
-                self.DWR = max(x)
-            else:
-                for i in range(len(self.y_filtered) - int(section)):
-                    y_arr = self.y_filtered[i:i + int(section)]
-                    self.y_devdist[i + int(section / 2)] = np.ptp(y_arr)
-                x = self.y_devdist
-                x = x[~np.isnan(x)]
-                self.DWR = max(x)
-        else:
-            self.DWR = 0.0
+    # def dev_dist(self, lin_prop, section, ch): #self.data.dev_dist(lin_prop, section,True)
+    #     print('dev_dist')
+    #     if ch:
+    #         self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
+    #         if lin_prop:
+    #             for i in range(len(self.y_filtered) - int(section)):
+    #                 y_arr = self.y_filtered[i:i + int(section)]
+    #                 x_arr = self.x_transformed[i:i + int(section)]
+    #                 y_reg = self.linreg(x_arr, y_arr)
+    #                 self.y_devdist[i + int(section / 2)] = np.ptp(y_reg)
+    #             x = self.y_devdist
+    #             x = x[~np.isnan(x)]
+    #             self.DWR = max(x)
+    #         else:
+    #             for i in range(len(self.y_filtered) - int(section)):
+    #                 y_arr = self.y_filtered[i:i + int(section)]
+    #                 self.y_devdist[i + int(section / 2)] = np.ptp(y_arr)
+    #             x = self.y_devdist
+    #             x = x[~np.isnan(x)]
+    #             self.DWR = max(x)
+    #     else:
+    #         self.DWR = 0.0
 
-    def moving_average(self, section):
+    def simple_moving_average(self, section):
+        print('simple_moving_average')
+        self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
         for i in range(len(self.y_filtered) - int(section)):
             y_arr = self.y_filtered[i:i + int(section)]
             self.y_devdist[i + int(section / 2)] = np.sum(y_arr)/len(y_arr)
+        x = self.y_devdist
+        x = x[~np.isnan(x)]
+        self.DWR = max(x)
+
+    def moving_p2v(self,  section):
+        print('moving_p2v')
+        self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
+        for i in range(len(self.y_filtered) - int(section)):
+            y_arr = self.y_filtered[i:i + int(section)]
+            self.y_devdist[i + int(section / 2)] = np.ptp(y_arr)
+        x = self.y_devdist
+        x = x[~np.isnan(x)]
+        self.DWR = max(x)
+
+    def moving_p2v_no_slope(self, section):
+        print('moving_p2v_no_slope')
+        self.y_devdist = np.arange(len(self.y_filtered)) * np.nan
+        for i in range(len(self.y_filtered) - int(section)):
+            y_arr = self.y_filtered[i:i + int(section)]
+            x_arr = self.x_transformed[i:i + int(section)]
+            y_reg = self.linreg(x_arr, y_arr)
+            self.y_devdist[i + int(section / 2)] = np.ptp(y_reg)
+        x = self.y_devdist
+        x = x[~np.isnan(x)]
+        self.DWR = max(x)
+
 
 
     # def rms_dist(self, section, ch):
@@ -496,11 +524,6 @@ class Data(QtCore.QObject):
         self.treech(p, worksheet2)
         workbook.close()
 
-        # i = 0
-        # for key, value in children.items():
-        #     worksheet2.write(i, 1, key)
-        #     worksheet2.write(i, 3, str(value))
-        #     i = i+1
 
     def treech(self, p , sheet):
         if p.hasChildren():
@@ -516,17 +539,6 @@ class Data(QtCore.QObject):
             print('row =', self.i_row, 'column', self.i_column, ' name = ', p.name(), ' value =', p.value())
             sheet.write(self.i_row, self.i_column, p.name())
             sheet.write(self.i_row, self.i_column + 1, str(p.value()))
-
-
-
-
-
-
-
-
-
-
-
 
 
     def polar(self, n, coeff, angle, remove_f, show_f):
