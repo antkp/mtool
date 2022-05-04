@@ -453,18 +453,18 @@ class Data(QtCore.QObject):
         worksheet1.insert_chart('D2', chart_1)
 
         if av:
-            for row, data in enumerate(self.y_devdist):
+            for row, value in enumerate(self.y_devdist):
                 try:
-                    worksheet1.write_column('C2', data)
-                    worksheet1.write('C1', self.av_name + exportfilename)
+                    worksheet1.write(row+1, 2,  value)
                 except:
                     pass
+            worksheet1.write('C1', self.av_name + exportfilename)
             chart_2 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
             chart_2.add_series({
                 'name': self.av_name + exportfilename,
                 'line': {'width': 1, 'color': '#C00000'},
                 'categories': '=' + exportfile + '!$A$2:$A$' + str(len(self.current_x)),
-                'values': '=' + exportfile + '!$C$2:$C$' + str(len(self.current_x))})
+                'values': '=' + exportfile + '!$C$2:$C$' + str(len(self.current_y))})
 
             chart_2.set_size({'width': 604.5, 'height': 312.41})
             chart_2.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
