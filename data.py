@@ -18,6 +18,7 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 #   autodetect delimiter & dezimal separator
 #   switch paramtree preset doesen´t work
 #   x koeff zusammen mit moving avarage ist fehlerhaft !
+#   export to excel includes FFT !
 
 
 class Data(QtCore.QObject):
