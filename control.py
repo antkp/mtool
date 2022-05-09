@@ -349,7 +349,8 @@ class Control:
         if p == '- none -':
             print('- none -')
             self.DWR = ''
-        section = self.ui.p.child('moving section').child('section').value() / self.x_scale
+        section = self.ui.p.child('moving section').child('section').value()*round(len(self.data.current_y)/
+                ( len(self.data.current_y) * self.data.T),6)
         with pg.BusyCursor():
             if p == 'simple_moving_average':
                 self.data.simple_moving_average(section)
@@ -433,7 +434,8 @@ class Control:
                 av = True
             else:
                 av = False
-            self.data.excel_export(self.ui.p, av, section)
+            fft = self.ui.p.child('fft').child('show fft').value()
+            self.data.excel_export(self.ui.p, av, section, fft)
 
     def on_polar(self):
         print('on_polar')

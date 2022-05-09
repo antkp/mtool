@@ -17,9 +17,6 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 # todo
 #   autodetect delimiter & dezimal separator
 #   switch paramtree preset doesen´t work
-#   x koeff zusammen mit moving avarage ist fehlerhaft !
-#   export to excel includes FFT !
-
 
 class Data(QtCore.QObject):
     sig_data_loaded = QtCore.pyqtSignal()
@@ -314,6 +311,8 @@ class Data(QtCore.QObject):
         self.av_section_info = self.av_name + '\n max= ' + str(round(max(x), 6))
 
     # todo fft log scale Y ?
+    #  fft filter / notch filter ?
+
     def fft(self, win, win_coeff):
         N = len(self.y_filtered)  # number of samples
         self.x_f = np.linspace(0.0, 1.0 / (2.0 * self.T * self.xscale), N // 2)
@@ -413,7 +412,7 @@ class Data(QtCore.QObject):
         np.savetxt(file, self.extend_array.reshape(-1, 1), delimiter=',', fmt='%10.9f')
         file.close()
 
-    def excel_export(self, p , av, section):
+    def excel_export(self, p, av, section, fft):
         dirname = os.path.dirname(self.filepath)
         exportfile = os.path.basename(self.filepath)
         exportfile = str(os.path.splitext(exportfile)[0])
@@ -460,7 +459,7 @@ class Data(QtCore.QObject):
                     worksheet1.write(row+1, 2,  value)
                 except:
                     pass
-            worksheet1.write('C1', self.av_name + exportfilename)
+            worksheet1.write('C1', self.av_name + '_' +exportfilename + '_period='+str(section))
             chart_2 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
             chart_2.add_series({
                 'name': self.av_name + exportfilename,
@@ -479,13 +478,58 @@ class Data(QtCore.QObject):
             chart_2.set_legend({'none': True})
             worksheet1.insert_chart('D18', chart_2)
 
-        worksheet2 = workbook.add_worksheet('config')
-        self.i_column = 0
-        self.i_row = 0
-        self.treech(p, worksheet2)
+        worksheet2 = workbook.add_worksheet('FFT')
+        worksheet2.write_column('A2', self.x_f)
+        worksheet2.write('A1', 'frequency')
+        worksheet2.write_column('B2', self.y_f)
+        worksheet2.write('B1', 'FFT-'+exportfilename+' amplitude')
+        worksheet2.write_column('C2', self.y_p)
+        worksheet2.write('C1', 'FFT-'+exportfilename+' phase')
+
+        chart_3 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
+        chart_3.add_series({
+            'name': 'FFT-'+exportfilename+' amplitude',
+            'line': {'width': 1, 'color': '#002060'},
+            'categories': '='+exportfile+'!$A$2:$A$'+str(len(self.x_f)),
+            'values': '='+exportfile+'!$B$2:$B$'+str(len(self.y_f))})
+
+        chart_3.set_size({'width': 604.5, 'height': 312.41})
+        chart_3.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
+        chart_3.set_title({'name': 'FFT-'+exportfilename+' amplitude', 'font': {'size': 9}, 'layout': {'x': 0.1, 'y': 0.0}})
+        chart_3.set_x_axis({'name': 'frequency', 'label_position': 'low', 'name_layout': {'x': 0.45, 'y': 0.95, },
+                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+        chart_3.set_y_axis({'name': 'amplitude', 'label_position': 'low', 'name_layout': {'x': 0.0, 'y': 0.45, },
+                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+        #chart_3.set_legend({'position': 'top'})
+        chart_3.set_legend({'none': True})
+        worksheet2.insert_chart('D2', chart_3)
+
+        chart_4 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
+        chart_4.add_series({
+            'name': 'FFT-'+exportfilename+' phase',
+            'line': {'width': 1, 'color': '#002060'},
+            'categories': '='+exportfile+'!$A$2:$A$'+str(len(self.x_f)),
+            'values': '='+exportfile+'!$B$2:$B$'+str(len(self.y_p))})
+
+        chart_4.set_size({'width': 604.5, 'height': 312.41})
+        chart_4.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
+        chart_4.set_title({'name': 'FFT-'+exportfilename+' phase', 'font': {'size': 9}, 'layout': {'x': 0.1, 'y': 0.0}})
+        chart_4.set_x_axis({'name': 'frequency', 'label_position': 'low', 'name_layout': {'x': 0.45, 'y': 0.95, },
+                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+        chart_4.set_y_axis({'name': 'phase', 'label_position': 'low', 'name_layout': {'x': 0.0, 'y': 0.45, },
+                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+        #chart_4.set_legend({'position': 'top'})
+        chart_4.set_legend({'none': True})
+        worksheet2.insert_chart('D18', chart_4)
+
+
+        worksheet3 = workbook.add_worksheet('config')
+        self.treech(p, worksheet3)
         workbook.close()
 
     def treech(self, p , sheet):
+        self.i_row = 0
+        self. i_column = 0
         if p.hasChildren():
             self.i_row = self.i_row + 1
             print('row =', self.i_row, ' column', self.i_column, ' BRANCH name = ', p.name())

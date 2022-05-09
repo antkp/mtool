@@ -113,15 +113,15 @@ class UI:
 
         self.p = Parameter.create(name='params', type='group', children=self.params)
 
-        # self.treefile = Path('tree.prm')
-        # try:
-        #     self.treefile.resolve(strict=True)
-        # except FileNotFoundError:
-        #     with open('tree.prm', 'wb') as fp:
-        #         pickle.dump(self.p.saveState(), fp)
-        # else:
-        #     with open('tree.prm', 'rb') as fp:
-        #          self.p.restoreState(pickle.load(fp))
+        self.treefile = Path('tree.prm')
+        try:
+            self.treefile.resolve(strict=True)
+        except FileNotFoundError:
+            with open('tree.prm', 'wb') as fp:
+                pickle.dump(self.p.saveState(), fp)
+        else:
+            with open('tree.prm', 'rb') as fp:
+                 self.p.restoreState(pickle.load(fp))
 
         self.noneParameter = [{'name': 'none', 'type': 'bool', 'value': False}]
         self.none = Parameter.create(name='none', type='group', children=self.noneParameter)
