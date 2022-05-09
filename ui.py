@@ -128,7 +128,7 @@ class UI:
         self.area = DockArea()
         main_window.setCentralWidget(self.area)
         main_window.resize(2000, 1000)
-        main_window.setWindowTitle('mtool_1.42-ALPHA')
+        main_window.setWindowTitle('mtool_1.45-ALPHA')
         self.filename = ''
         pg.setConfigOption('background', ('#141414'))
         pg.setConfigOption('foreground', (250, 250, 250))

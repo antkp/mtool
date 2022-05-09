@@ -4,7 +4,6 @@ import numpy as np
 import pickle
 from pathlib import Path
 
-
 class Control:
 
     def __init__(self, data, ui):

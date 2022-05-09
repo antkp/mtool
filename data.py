@@ -16,7 +16,8 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 
 # todo
 #   autodetect delimiter & dezimal separator
-#   switsch paramtree preset doesen´t work
+#   switch paramtree preset doesen´t work
+#   x koeff zusammen mit moving avarage ist fehlerhaft !
 
 
 class Data(QtCore.QObject):
