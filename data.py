@@ -174,8 +174,8 @@ class Data(QtCore.QObject):
             else:
                 self.y_raw = y_1 + x_1
 
-        self.current_x = self.x_raw # * self.xscale
-        self.current_y = self.y_raw # * self.yscale
+        self.current_x = self.x_raw * self.xscale
+        self.current_y = self.y_raw * self.yscale
         self.T = abs(round(self.x_raw[11] - self.x_raw[10], 6))
         #print('self.T = ', self.T)
         self.wi2Text = '\n' + ' T = ' + str(self.T) + '\n' + \
@@ -318,7 +318,7 @@ class Data(QtCore.QObject):
         self.x_f = np.linspace(0.0, 1.0 / (2.0 * self.T * self.xscale), N // 2)
         if win == 'boxcar':
             amp = np.fft.fft(self.y_filtered)
-            angle_f = np.rad2deg(np.angle(self.y_filtered[0:N // 2]))
+            # angle_f = np.rad2deg(np.angle(self.y_filtered[0:N // 2]))
         else:
             W = sp.signal.windows.get_window(win, len(self.y_filtered))
             a = self.y_filtered * W * win_coeff
@@ -490,8 +490,8 @@ class Data(QtCore.QObject):
         chart_3.add_series({
             'name': 'FFT-'+exportfilename+' amplitude',
             'line': {'width': 1, 'color': '#002060'},
-            'categories': '='+exportfile+'!$A$2:$A$'+str(len(self.x_f)),
-            'values': '='+exportfile+'!$B$2:$B$'+str(len(self.y_f))})
+            'categories': 'FFT'+'!$A$2:$A$'+str(len(self.x_f)),
+            'values': 'FFT'+'!$B$2:$B$'+str(len(self.y_f))})
 
         chart_3.set_size({'width': 604.5, 'height': 312.41})
         chart_3.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
@@ -508,8 +508,8 @@ class Data(QtCore.QObject):
         chart_4.add_series({
             'name': 'FFT-'+exportfilename+' phase',
             'line': {'width': 1, 'color': '#002060'},
-            'categories': '='+exportfile+'!$A$2:$A$'+str(len(self.x_f)),
-            'values': '='+exportfile+'!$B$2:$B$'+str(len(self.y_p))})
+            'categories': 'FFT' + '!$A$2:$A$'+str(len(self.x_f)),
+            'values': 'FFT' + '!$C$2:$C$'+str(len(self.y_p))})
 
         chart_4.set_size({'width': 604.5, 'height': 312.41})
         chart_4.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
@@ -524,12 +524,12 @@ class Data(QtCore.QObject):
 
 
         worksheet3 = workbook.add_worksheet('config')
+        self.i_row = 0
+        self. i_column = 0
         self.treech(p, worksheet3)
         workbook.close()
 
     def treech(self, p , sheet):
-        self.i_row = 0
-        self. i_column = 0
         if p.hasChildren():
             self.i_row = self.i_row + 1
             print('row =', self.i_row, ' column', self.i_column, ' BRANCH name = ', p.name())

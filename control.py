@@ -352,6 +352,7 @@ class Control:
         section = self.ui.p.child('moving section').child('section').value()*round(len(self.data.current_y)/
                 ( len(self.data.current_y) * self.data.T),6)
         with pg.BusyCursor():
+            self.ui.p.child('moving section').child('section').setvalue( )  todo ca 1/bereich ###
             if p == 'simple_moving_average':
                 self.data.simple_moving_average(section)
             if p == 'moving p2v':
