@@ -240,6 +240,7 @@ class Control:
                 self.integral = p.value()
             if p.name() == 'scale x-axis':
                 self.x_scale = p.value()
+                self.ui.p.child('moving section').child('section').setValue(round(self.data.x_transformed[-1] / 10))
             if p.name() == 'scale y-axis':
                 self.y_scale = p.value()
             if p.name() == 'x-offset':
@@ -344,15 +345,21 @@ class Control:
             self.ui.w4.setTitle(self.title)
             self.on_moving_section()
 
+
+
     def on_moving_section(self):
         p = self.ui.p.child('moving section').child('average').value()
+
         if p == '- none -':
             print('- none -')
             self.DWR = ''
+
+
         section = self.ui.p.child('moving section').child('section').value()*round(len(self.data.current_y)/
                 ( len(self.data.current_y) * self.data.T),6)
+
+
         with pg.BusyCursor():
-            self.ui.p.child('moving section').child('section').setvalue( )  todo ca 1/bereich ###
             if p == 'simple_moving_average':
                 self.data.simple_moving_average(section)
             if p == 'moving p2v':
