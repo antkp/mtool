@@ -1,8 +1,10 @@
-from pyinstaller_setuptools import setup
+
+from setuptools import setup
+
 
 setup(
-    name="mtool-1.45_ALPHA",
-    version="1.45",
+    name="mtool-1.46_ALPHA",
+    version="1.46",
     description="Read me",
     long_description=README,
     long_description_content_type="text/markdown",

@@ -478,50 +478,52 @@ class Data(QtCore.QObject):
             chart_2.set_legend({'none': True})
             worksheet1.insert_chart('D18', chart_2)
 
-        worksheet2 = workbook.add_worksheet('FFT')
-        worksheet2.write_column('A2', self.x_f)
-        worksheet2.write('A1', 'frequency')
-        worksheet2.write_column('B2', self.y_f)
-        worksheet2.write('B1', 'FFT-'+exportfilename+' amplitude')
-        worksheet2.write_column('C2', self.y_p)
-        worksheet2.write('C1', 'FFT-'+exportfilename+' phase')
+        if fft:
 
-        chart_3 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
-        chart_3.add_series({
-            'name': 'FFT-'+exportfilename+' amplitude',
-            'line': {'width': 1, 'color': '#002060'},
-            'categories': 'FFT'+'!$A$2:$A$'+str(len(self.x_f)),
-            'values': 'FFT'+'!$B$2:$B$'+str(len(self.y_f))})
+            worksheet2 = workbook.add_worksheet('FFT')
+            worksheet2.write_column('A2', self.x_f)
+            worksheet2.write('A1', 'frequency')
+            worksheet2.write_column('B2', self.y_f)
+            worksheet2.write('B1', 'FFT-'+exportfilename+' amplitude')
+            worksheet2.write_column('C2', self.y_p)
+            worksheet2.write('C1', 'FFT-'+exportfilename+' phase')
 
-        chart_3.set_size({'width': 604.5, 'height': 312.41})
-        chart_3.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
-        chart_3.set_title({'name': 'FFT-'+exportfilename+' amplitude', 'font': {'size': 9}, 'layout': {'x': 0.1, 'y': 0.0}})
-        chart_3.set_x_axis({'name': 'frequency', 'label_position': 'low', 'name_layout': {'x': 0.45, 'y': 0.95, },
-                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
-        chart_3.set_y_axis({'name': 'amplitude', 'label_position': 'low', 'name_layout': {'x': 0.0, 'y': 0.45, },
-                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
-        #chart_3.set_legend({'position': 'top'})
-        chart_3.set_legend({'none': True})
-        worksheet2.insert_chart('D2', chart_3)
 
-        chart_4 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
-        chart_4.add_series({
-            'name': 'FFT-'+exportfilename+' phase',
-            'line': {'width': 1, 'color': '#002060'},
-            'categories': 'FFT' + '!$A$2:$A$'+str(len(self.x_f)),
-            'values': 'FFT' + '!$C$2:$C$'+str(len(self.y_p))})
+            chart_3 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
+            chart_3.add_series({
+                'name': 'FFT-'+exportfilename+' amplitude',
+                'line': {'width': 1, 'color': '#002060'},
+                'categories': 'FFT'+'!$A$2:$A$'+str(len(self.x_f)),
+                'values': 'FFT'+'!$B$2:$B$'+str(len(self.y_f))})
 
-        chart_4.set_size({'width': 604.5, 'height': 312.41})
-        chart_4.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
-        chart_4.set_title({'name': 'FFT-'+exportfilename+' phase', 'font': {'size': 9}, 'layout': {'x': 0.1, 'y': 0.0}})
-        chart_4.set_x_axis({'name': 'frequency', 'label_position': 'low', 'name_layout': {'x': 0.45, 'y': 0.95, },
-                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
-        chart_4.set_y_axis({'name': 'phase', 'label_position': 'low', 'name_layout': {'x': 0.0, 'y': 0.45, },
-                      'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
-        #chart_4.set_legend({'position': 'top'})
-        chart_4.set_legend({'none': True})
-        worksheet2.insert_chart('D18', chart_4)
+            chart_3.set_size({'width': 604.5, 'height': 312.41})
+            chart_3.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
+            chart_3.set_title({'name': 'FFT-'+exportfilename+' amplitude', 'font': {'size': 9}, 'layout': {'x': 0.1, 'y': 0.0}})
+            chart_3.set_x_axis({'name': 'frequency', 'label_position': 'low', 'name_layout': {'x': 0.45, 'y': 0.95, },
+                          'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+            chart_3.set_y_axis({'name': 'amplitude', 'label_position': 'low', 'name_layout': {'x': 0.0, 'y': 0.45, },
+                          'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+            #chart_3.set_legend({'position': 'top'})
+            chart_3.set_legend({'none': True})
+            worksheet2.insert_chart('D2', chart_3)
 
+            chart_4 = workbook.add_chart({'type': 'scatter', 'subtype': 'straight'})
+            chart_4.add_series({
+                'name': 'FFT-'+exportfilename+' phase',
+                'line': {'width': 1, 'color': '#002060'},
+                'categories': 'FFT' + '!$A$2:$A$'+str(len(self.x_f)),
+                'values': 'FFT' + '!$C$2:$C$'+str(len(self.y_p))})
+
+            chart_4.set_size({'width': 604.5, 'height': 312.41})
+            chart_4.set_plotarea({'layout': {'x': 1, 'y': 0.1, 'width': 0.85, 'height': 0.75, }})
+            chart_4.set_title({'name': 'FFT-'+exportfilename+' phase', 'font': {'size': 9}, 'layout': {'x': 0.1, 'y': 0.0}})
+            chart_4.set_x_axis({'name': 'frequency', 'label_position': 'low', 'name_layout': {'x': 0.45, 'y': 0.95, },
+                          'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+            chart_4.set_y_axis({'name': 'phase', 'label_position': 'low', 'name_layout': {'x': 0.0, 'y': 0.45, },
+                          'major_gridlines': {'visible': True, 'line': {'width': 0.2, 'color':'#808080', }}, })
+            #chart_4.set_legend({'position': 'top'})
+            chart_4.set_legend({'none': True})
+            worksheet2.insert_chart('D18', chart_4)
 
         worksheet3 = workbook.add_worksheet('config')
         self.i_row = 0

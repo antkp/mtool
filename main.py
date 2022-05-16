@@ -7,12 +7,22 @@ from control import Control
 import ctypes
 import platform
 
+
 #ToDo:
 # test the code !!!
 # spectrogramm RIO line ?
 # maybe use setup.py ! ?
 # check number of values in "export" function
 # add function "export to Zerodurmerge" ???
+# add boot screen see below
+
+# if '_PYIBoot_SPLASH' in os.environ and importlib.util.find_spec("pyi_splash"):
+#     import pyi_splash
+#     pyi_splash.update_text('UI Loaded ...')
+#     pyi_splash.close()
+#     log.info('Splash screen closed.')
+
+
 
 try:
     # Include in try/except block if you're also targeting Mac/Linux

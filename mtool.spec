@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+
 block_cipher = None
 
 a = Analysis(['main.py'],
@@ -22,12 +23,13 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='mtool-v1.45_ALPHA',
+          name='mtool-v1.46_ALPHA',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=True ,
-          icon='logo.ico')
+          console=False,
+          icon='logo.ico',
+          version='version.rc')

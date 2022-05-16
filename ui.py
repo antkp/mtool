@@ -8,7 +8,8 @@ from pathlib import Path
 
 # todo
 #  Pickle Option only for config data not for Filter,Transform ... ???
-
+#  standart-presets to load files
+#  Autoscale within each graph
 
 class UI:
     def __init__(self, main_window):
@@ -26,7 +27,7 @@ class UI:
             {'name': 'filepath', 'type': 'str', 'value': '', 'visible': False, 'readonly': True},
             {'name': 'filename', 'type': 'str', 'value': '', 'visible': False, 'readonly': True},
             {'name': 'config data', 'type': 'group', 'expanded': True, 'visible': True, 'children': [
-                {'name': 'head rows', 'type': 'int', 'value': 6, 'limits': (0, 20), 'tip': "ignore first rows of data head"},
+                {'name': 'head rows', 'type': 'int', 'value': 0, 'limits': (0, 20), 'tip': "ignore first rows of data head"},
                 {'name': 'delimiter', 'type': 'list', 'values': {'tab':'\t', 'semicolon':';', 'comma':','},
                  'value': '\t', 'tip': 'delimiter between columns'},
                 {'name': 'decimal separator', 'type': 'list', 'values': {'comma': ',', 'point':'.'},
@@ -75,7 +76,7 @@ class UI:
                 {'name': 'average', 'type': 'list', 'values': self.average_arr,
                  'value': 'no avarage', 'tip': 'https://en.wikipedia.org/wiki/Moving_average'},
                 #{'name': 'exclude linear proportion', 'type': 'bool', 'value': False, 'tip': "include linear proportion within section"},
-                {'name': 'section', 'type': 'int', 'value': 100}]},
+                {'name': 'section', 'type': 'float', 'value': 100.0}]},
             {'name': 'extend axis', 'type': 'group', 'expanded': True, 'visible': True, 'children': [
                 {'name': 'extend data', 'type': 'bool', 'value': False},
                 {'name': 'extend', 'type': 'group', 'visible': False, 'children': [
@@ -128,7 +129,7 @@ class UI:
         self.area = DockArea()
         main_window.setCentralWidget(self.area)
         main_window.resize(2000, 1000)
-        main_window.setWindowTitle('mtool_1.45-ALPHA')
+        main_window.setWindowTitle('mtool_v1.46-ALPHA')
         self.filename = ''
         pg.setConfigOption('background', ('#141414'))
         pg.setConfigOption('foreground', (250, 250, 250))
