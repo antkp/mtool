@@ -4,7 +4,7 @@
 block_cipher = None
 
 a = Analysis(['main.py'],
-             pathex=['C:\\Users\\'],
+             pathex=['C:\\Users\\hartungp\\PycharmProjects\\mtool'],
              binaries=[],
              datas=[('logo.ico', 'logo.png')],
              hiddenimports=['scipy.optimize.curve_fit'],

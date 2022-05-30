@@ -1,4 +1,5 @@
 import pyqtgraph as pg
+import pyqtgraph.parametertree.parameterTypes as pTypes
 from pyqtgraph.dockarea import *
 from pyqtgraph.Qt import QtCore, QtGui
 from pyqtgraph.parametertree import Parameter, ParameterTree
@@ -11,6 +12,20 @@ from pathlib import Path
 #  standart-presets to load files
 #  Autoscale within each graph
 
+
+class ScalableGroup(pTypes.GroupParameter):
+
+    def __init__(self, **opts):
+        opts['type'] = 'action'
+        opts['addText'] = 'add'
+        opts['addList'] = ['newband']
+        pTypes.GroupParameter.__init__(self, **opts)
+
+    def addNew(self, typ):
+        x  = (len(self.childs)/2+1)
+        self.addChild(dict(name=" f_low_%d" % x, type='float', value= 1.1, removable=True, renamable=True))
+        self.addChild(dict(name="f_high_%d" % x, type='float', value=10.1, removable=True, renamable=True))
+
 class UI:
     def __init__(self, main_window):
 
@@ -19,6 +34,7 @@ class UI:
                            [1.0, 1.97, 1.59, 1.63, 2.26]]  # energyCorrection
 
         self.average_arr = ['- none -', 'simple_moving_average', 'moving p2v', 'moving p2v no slope']
+        filter_arr = ['- no filter -', 'gauss', 'butterworth', 'savitzky–golay', 'lowess', 'fft-filter']
 
         self.params = \
             [
@@ -54,7 +70,7 @@ class UI:
                 {'name': 'y-zero @ x-zero', 'type': 'bool', 'value': False, 'tip': 'set y offset XYZ'}]},
             {'name': 'filter', 'type': 'group', 'expanded': True, 'visible': True, 'children': [
                 {'name': 'select filter', 'type': 'list', 'values':
-                    ['- no filter -', 'gauss', 'butterworth', 'savitzky–golay', 'lowess'], 'value': '- no filter -'},
+                    filter_arr, 'value': filter_arr[0]},
                 {'name': 'gauss', 'type': 'group', 'expanded': True, 'visible': False, 'tip': 'https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter1d.html','children': [
                     {'name': 'sigma', 'type': 'float', 'value': 3.0, 'limits': (0.0, 6.0), 'step': 0.1}]},
                 {'name': 'butterworth', 'type': 'group', 'expanded': True, 'visible': False,
@@ -70,7 +86,12 @@ class UI:
                     {'name': 'order', 'type': 'int', 'value': 3, 'limits': (2, 10), 'step': 1}]},
                 {'name': 'lowess', 'type': 'group', 'expanded': True, 'visible': False, 'tip': 'https://www.statsmodels.org/stable/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html', 'children': [
                     {'name': 'fraction', 'type': 'float', 'value': 0.025, 'limits': (0.0, 1.0), 'step': 0.01},
-                    {'name': 'iteration', 'type': 'int', 'value': 0, 'limits': (0, 5), 'step': 1}]}]},
+                    {'name': 'iteration', 'type': 'int', 'value': 0, 'limits': (0, 5), 'step': 1}]},
+                ScalableGroup(name="fft-filter", visible= False, children=[
+                ]),
+            ]},
+
+
             {'name': 'moving section', 'type': 'group', 'expanded': True, 'visible': True, 'tip': 'größte Abweichung (ohne linearen Anteil) innerhalb eines Bereiches', 'children': [
                 #{'name': 'show deviation', 'type': 'bool', 'value': False, 'tip': "plot "},
                 {'name': 'average', 'type': 'list', 'values': self.average_arr,
@@ -109,20 +130,22 @@ class UI:
                     {'name': 'scale coeff', 'type': 'float', 'value': 3.0, 'tip': "scale the polar plot"},
                     {'name': 'angle offset', 'type': 'float', 'value': 0.0, 'tip': "scale the polar plot"},
                     {'name': 'remove f_fund', 'type': 'bool', 'value': False},
-                    {'name': 'show f_fund', 'type': 'bool', 'value': False}]}]},
+                    {'name': 'show f_fund', 'type': 'bool', 'value': False}]},
+]},
+
             {'name': 'autoscale graph', 'type': 'bool', 'value': True}]
 
         self.p = Parameter.create(name='params', type='group', children=self.params)
 
-        self.treefile = Path('tree.prm')
-        try:
-            self.treefile.resolve(strict=True)
-        except FileNotFoundError:
-            with open('tree.prm', 'wb') as fp:
-                pickle.dump(self.p.saveState(), fp)
-        else:
-            with open('tree.prm', 'rb') as fp:
-                 self.p.restoreState(pickle.load(fp))
+        # self.treefile = Path('tree.prm')
+        # try:
+        #     self.treefile.resolve(strict=True)
+        # except FileNotFoundError:
+        #     with open('tree.prm', 'wb') as fp:
+        #         pickle.dump(self.p.saveState(), fp)
+        # else:
+        #     with open('tree.prm', 'rb') as fp:
+        #          self.p.restoreState(pickle.load(fp))
 
         self.noneParameter = [{'name': 'none', 'type': 'bool', 'value': False}]
         self.none = Parameter.create(name='none', type='group', children=self.noneParameter)

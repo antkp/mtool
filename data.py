@@ -15,8 +15,9 @@ from scipy import stats
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 # todo
-#   autodetect delimiter & dezimal separator
-#   switch paramtree preset doesen´t work
+#  autodetect delimiter & dezimal separator
+#  switch paramtree preset doesen´t work
+#  bei Anwendung von Filtern im "Hintergrund" die ungefilterten Daten anzeigen (auch bei Excel export)
 
 class Data(QtCore.QObject):
     sig_data_loaded = QtCore.pyqtSignal()
@@ -71,6 +72,7 @@ class Data(QtCore.QObject):
         self.minus_extend = []
         self.extend_array = []
         self.y_fund = []
+        self.fft_band_arr =[]
 
 
         self.circleMax = pg.QtGui.QGraphicsEllipseItem()
@@ -274,6 +276,68 @@ class Data(QtCore.QObject):
         self.current_y = self.y_filtered
         return f_control
 
+    def fft_filter(self):
+
+        x_f = np.fft.fftfreq(len(self.x_transformed), self.T * self.xscale)
+        x_f = np.fft.fftshift(x_f)
+
+        df = (1 / (self.T** self.xscale)) / len(self.x_transformed)
+
+        fft_filter_koeff_array_x = np.arange(0, (1 / self.T) / (2 * self.xscale) + df, df)
+        print('fft_filter_koeff_array_x = ', fft_filter_koeff_array_x)
+
+        a = np.ones(round(len(self.x_transformed)/2))
+        print('a_1 = ', a)
+        print('len(a_1) = ', len(a))
+
+        for i in self.fft_band_arr:
+            print('i = ', i )
+            print('(i[1]-i[0])/df = ', (i[1]-i[0])/df)
+            band =round((i[1]-i[0])/df)
+
+            print('df_fftfreq= ', df)
+            print('x_f[2] -x_f[1]', x_f[2] -x_f[1])
+
+            print('i[1] = ', i[1])
+            print('i[0] = ', i[0])
+            print('band = ', band)
+            W = signal.windows.hann(band)
+
+            b = 1-W
+            b = b * 0
+            start = round(i[0] / df)
+
+            stop = start + band
+            print('start = ', start)
+            print('stop = ', stop)
+
+            print('len a_2 = ', len(a))
+            print('len b = ', len(b))
+
+            c = np.append(a[:start], b)
+            c = np.append(c, a[stop:])
+            print('len(c) = ', len(c))
+            a = c
+
+        a_rev = a[::-1]
+        a = np.append(a_rev, a)
+        print('len(a_3) = ', len(a))
+
+        sp = np.fft.fft(self.y_transformed)
+        sp = np.fft.fftshift(sp)
+        print('len(a) = ', len(a))
+        print('len(sp) = ', len(sp))
+        spa = sp * a
+        spa = np.fft.ifftshift(spa)
+        print('x_f = ', x_f)
+        print('sp.real = ', spa.real)
+
+        iff = np.fft.ifft(spa)
+        self.current_y =  iff.real
+        self.y_filtered = self.current_y
+
+        return x_f, spa.real,  iff.real
+
     def simple_moving_average(self, section):
         print('simple_moving_average')
         self.av_name = 'simple_moving_average'
@@ -311,7 +375,6 @@ class Data(QtCore.QObject):
         self.av_section_info = self.av_name + '\n max= ' + str(round(max(x), 6))
 
     # todo fft log scale Y ?
-    #  fft filter / notch filter ?
 
     def fft(self, win, win_coeff):
         N = len(self.y_filtered)  # number of samples

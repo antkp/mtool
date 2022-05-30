@@ -92,6 +92,9 @@ class Control:
         self.ui.p.child('filter').child('lowess').child('fraction').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('lowess').child('iteration').sigValueChanged.connect(self.on_filter)
 
+        self.ui.p.child('filter').child('fft-filter').sigValueChanged.connect(self.on_filter)
+        self.ui.p.child('filter').child('fft-filter').sigChildAdded.connect(self.on_add_band)
+
         self.ui.p.child('moving section').child('average').sigValueChanged.connect(self.on_moving_section)
         self.ui.p.child('moving section').child('section').sigValueChanged.connect(self.on_moving_section)
 
@@ -118,6 +121,24 @@ class Control:
         self.ui.p.child('polar plot').child('polar config').child('remove f_fund').sigValueChanged.connect(self.on_polar)
         self.ui.p.child('polar plot').child('polar config').child('show f_fund').sigValueChanged.connect(self.on_polar)
         self.ui.p.sigValueChanged.connect(self.on_treechange)
+
+    def on_add_band(self, child, index):
+        fft_filter_limits = (0, (1 / self.data.T) / (2*self.data.xscale))
+        lim = int(index.name()[-1]) / 10
+
+        if 'f_high' in index.name():
+            index.setLimits(fft_filter_limits)
+            index.setValue(round(fft_filter_limits[1] * lim+lim/2, 2))
+            self.ui.p.child('filter').child('fft-filter').child(index.name()).sigValueChanged.connect(self.on_filter)
+            print('f_high')
+            self.on_filter(index)
+
+        if 'f_low' in index.name():
+            index.setValue(round(fft_filter_limits[1] * lim-lim/2, 2))
+            self.ui.p.child('filter').child('fft-filter').child(index.name()).sigValueChanged.connect(self.on_filter)
+            print('f_low')
+
+
 
     def on_selctbtn(self):
         print('on_selectbtn')
@@ -274,6 +295,7 @@ class Control:
                 self.ui.p.child('filter').child('butterworth').hide()
                 self.ui.p.child('filter').child('savitzky–golay').hide()
                 self.ui.p.child('filter').child('lowess').hide()
+                self.ui.p.child('filter').child('fft-filter').hide()
 
                 self.data.gauss(0, False)
                 config_filter = ''
@@ -283,6 +305,7 @@ class Control:
                 self.ui.p.child('filter').child('butterworth').hide()
                 self.ui.p.child('filter').child('savitzky–golay').hide()
                 self.ui.p.child('filter').child('lowess').hide()
+                self.ui.p.child('filter').child('fft-filter').hide()
                 self.sigma = self.ui.p.child('filter').child('gauss').child('sigma').value()
                 config_filter = ' - - - ' + str(self.data.gauss(self.sigma, True))
 
@@ -291,7 +314,7 @@ class Control:
                 self.ui.p.child('filter').child('butterworth').show()
                 self.ui.p.child('filter').child('savitzky–golay').hide()
                 self.ui.p.child('filter').child('lowess').hide()
-
+                self.ui.p.child('filter').child('fft-filter').hide()
                 self.ui.p.child('filter').child('butterworth').child('high_cut').hide()
                 self.ui.p.child('filter').child('butterworth').child('low_cut').hide()
 
@@ -327,6 +350,7 @@ class Control:
                 self.ui.p.child('filter').child('butterworth').hide()
                 self.ui.p.child('filter').child('savitzky–golay').show()
                 self.ui.p.child('filter').child('lowess').hide()
+                self.ui.p.child('filter').child('fft-filter').hide()
                 self.size = self.ui.p.child('filter').child('savitzky–golay').child('size').value()
                 self.order = self.ui.p.child('filter').child('savitzky–golay').child('order').value()
                 config_filter = ' - - - ' + str(self.data.s_g(self.size, self.order))
@@ -336,9 +360,31 @@ class Control:
                 self.ui.p.child('filter').child('butterworth').hide()
                 self.ui.p.child('filter').child('savitzky–golay').hide()
                 self.ui.p.child('filter').child('lowess').show()
+                self.ui.p.child('filter').child('fft-filter').hide()
                 self.fraction = self.ui.p.child('filter').child('lowess').child('fraction').value()
                 self.iteration = self.ui.p.child('filter').child('lowess').child('iteration').value()
                 config_filter = ' - ' + str(self.data.lowess(self.fraction, self.iteration))
+
+            if self.filter == 'fft-filter':
+                self.ui.p.child('filter').child('gauss').hide()
+                self.ui.p.child('filter').child('butterworth').hide()
+                self.ui.p.child('filter').child('savitzky–golay').hide()
+                self.ui.p.child('filter').child('lowess').hide()
+                self.ui.p.child('filter').child('fft-filter').show()
+                self.data.fft_band_arr = []
+
+                for i in self.ui.p.child('filter').child('fft-filter').children():
+                    self.data.fft_band_arr = np.append(self.data.fft_band_arr, i.value())
+                try:
+                    self.data.fft_band_arr = self.data.fft_band_arr.reshape(-1, 2)
+                except:
+                    print('reshape not possible')
+
+                self.arr_f, self.arr_amp, self.iff = self.data.fft_filter()
+
+                config_filter = ' - ' + '- TO DO -'
+
+
             self.title =  str(os.path.basename(self.path)) + ' - ' + config_filter
             self.ui.w2.setTitle(self.title)
             self.ui.w3.setTitle(self.title)
