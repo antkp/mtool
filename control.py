@@ -172,11 +172,13 @@ class Control:
         self.data.nthval = self.ui.p.child('config data').child('use every n^th row').value()
         if self.ui.p.child('config data').child('lengths compensation').value():
             self.ui.p.child('config data').child('head rows').setValue(1)
-        try:
+
+        #try:
             len_comp = self.ui.p.child('config data').child('lengths compensation').value()
             self.data.load(len_comp)
+
             self.on_treechange()
-        except:
+        #except:
             print('LOAD ERROR')
             self.ui.w2.clear()
 

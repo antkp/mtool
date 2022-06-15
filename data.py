@@ -16,9 +16,8 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 
 # todo
 #  autodetect delimiter & dezimal separator
-#  switch paramtree preset doesen´t work
+#  "switch" paramtree preset doesen´t work
 #  bei Anwendung von Filtern im "Hintergrund" die ungefilterten Daten anzeigen (auch bei Excel export)
-
 
 class Data(QtCore.QObject):
     sig_data_loaded = QtCore.pyqtSignal()
@@ -119,17 +118,38 @@ class Data(QtCore.QObject):
                 self.rows = self.rows + f.readline()
         return self.filepath
 
+
     def load(self, len_comp):
         print('-load-')
+
+        #num_lines = sum(1 for _ in open(self.filepath)) # number lines in file
+        #print('num_lines = ', num_lines)
+
+
+        #search file reversed for lines onliy containing charater listed in l
+        skip_footer = 0
+        l = ['0', ';']
+        for line in reversed(list(open(self.filepath, 'r'))):
+            result = all(elem in l for elem in list(set(line.rstrip())))
+            if not result:
+                break
+            skip_footer += 1
+
         text = open(self.filepath, 'r').read()
+
+        #print('---text = ', text)
+
         if self.separator == ',':
             text = text.replace(',', '.')
             print(len(text))
 
+        #print('list(set(data))', list(set(text)))  # todo use also to autodetect separators !
+
         #todo .find wenn möglich zeilenweise --> dann '0;0;0' zu begin der Zeile suchen?
         #
-        p = text.find('0;0;0;0;0;')
-        text = text[0:p]
+        #p = text.find('0;0;0;0;0;')
+        #text = text[0:p]
+
         text = text.replace('nan', '0')
         temp_file = open("temp", "w+")
         temp_file.write(text)
@@ -139,12 +159,16 @@ class Data(QtCore.QObject):
             if self.nthval != 1:
                 print('nthval = ', self.nthval)
                 with open('temp') as f_in:
-                    data = np.genfromtxt(itertools.islice(f_in, 0, None, self.nthval), skip_header=self.head,
-                                delimiter=self.delimiter, usecols=[self.xcol, self.ycol], autostrip=True)
+                    data = np.genfromtxt(itertools.islice(f_in, 0, None, self.nthval), skip_footer= skip_footer,
+                        skip_header=self.head,delimiter=self.delimiter, usecols=[self.xcol, self.ycol], autostrip=True)
             else:
                 print('nthval ++ = ', self.nthval)
-                data = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter,
+                data = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter, skip_footer= skip_footer,
                                 usecols=[self.xcol, self.ycol], autostrip=True)
+
+
+            print('type(data) = ', type(data))
+            print('data = ',  data)
 
             self.x_raw = data[:, 0]
             self.y_raw = data[:, 1]
@@ -153,12 +177,12 @@ class Data(QtCore.QObject):
             if self.nthval != 1:
                 print('nthval = ', self.nthval)
                 with open('temp') as f_in:
-                    self.y_raw = np.genfromtxt(itertools.islice(f_in, 0, None, self.nthval), skip_header=self.head,
+                    self.y_raw = np.genfromtxt(itertools.islice(f_in, 0, None, self.nthval), skip_header=self.head, skip_footer= skip_footer,
                                 delimiter=self.delimiter, usecols=[self.ycol], autostrip=True)
             else:
                 print('nthval ++ = ', self.nthval)
                 print('###___###')
-                self.y_raw = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter,
+                self.y_raw = np.genfromtxt('temp', skip_header=self.head, delimiter=self.delimiter, skip_footer= skip_footer,
                                 usecols=[self.ycol], autostrip=True)
 
             self.x_raw = np.arange(start=0, stop=len(self.y_raw))
