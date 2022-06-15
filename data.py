@@ -19,6 +19,7 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 #  switch paramtree preset doesen´t work
 #  bei Anwendung von Filtern im "Hintergrund" die ungefilterten Daten anzeigen (auch bei Excel export)
 
+
 class Data(QtCore.QObject):
     sig_data_loaded = QtCore.pyqtSignal()
 
@@ -124,6 +125,9 @@ class Data(QtCore.QObject):
         if self.separator == ',':
             text = text.replace(',', '.')
             print(len(text))
+
+        #todo .find wenn möglich zeilenweise --> dann '0;0;0' zu begin der Zeile suchen?
+        #
         p = text.find('0;0;0;0;0;')
         text = text[0:p]
         text = text.replace('nan', '0')
@@ -277,6 +281,8 @@ class Data(QtCore.QObject):
         return f_control
 
     def fft_filter(self):
+
+        # todo  update fft graph if fiter was modified
 
         x_f = np.fft.fftfreq(len(self.x_transformed), self.T * self.xscale)
         x_f = np.fft.fftshift(x_f)
