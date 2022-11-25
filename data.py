@@ -213,7 +213,6 @@ class Data(QtCore.QObject):
                   ' N = ' + str(len(self.x_raw)) + '\n' + \
                   ' t = ' + str(round(len(self.x_raw) * self.T, 8))
         #print('self.wi2Text = ', self.wi2Text)
-
         self.sig_data_loaded.emit()
 
     def region_change(self, region):
@@ -306,7 +305,7 @@ class Data(QtCore.QObject):
 
     def fft_filter(self):
 
-        # todo  update fft graph if fiter was modified
+        # todo update fft graph if fiter was modified
 
         x_f = np.fft.fftfreq(len(self.x_transformed), self.T * self.xscale)
         x_f = np.fft.fftshift(x_f)

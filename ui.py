@@ -69,6 +69,7 @@ class UI:
                 {'name': 'first&last point on same level', 'type': 'bool', 'value': False},
                 {'name': 'y-zero @ x-zero', 'type': 'bool', 'value': False, 'tip': 'set y offset XYZ'}]},
             {'name': 'filter', 'type': 'group', 'expanded': True, 'visible': True, 'children': [
+                {'name': 'show unfiltered data', 'type': 'bool', 'value': False},
                 {'name': 'select filter', 'type': 'list', 'values':
                     filter_arr, 'value': filter_arr[0]},
                 {'name': 'gauss', 'type': 'group', 'expanded': True, 'visible': False, 'tip': 'https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter1d.html','children': [
@@ -120,7 +121,7 @@ class UI:
                     {'name': 'segment length', 'type': 'int', 'value': 1024, 'limits': (128, 5000000), 'step': 1,
                      'tip': 'https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.spectrogram.html'},
                     {'name': 'fft window', 'type': 'list', 'values': self.fftwindows[0], 'value': 'hann',
-                     'tip': 'https://download.ni.com/evaluation/pxi/Understanding%20FFTs%20and%20Windowing.pdf'},
+                     'tip': 'https://download.ni.com/evaluation/pxi/Understanding%20FFTs%20and%20Windowing.pdf; https://www.sjsu.edu/people/burford.furman/docs/me120/FFT_tutorial_NI.pdf'},
                     {'name': 'overlap', 'type': 'int', 'value': 0, 'limits': (0, 5000), 'step': 1},
                     {'name': 'log_z_scale', 'type': 'bool', 'value': True, 'tip': "scale z-value by (20.*np.log10)"}]}]},
             {'name': 'polar plot', 'type': 'group', 'expanded': True, 'visible': True, 'children': [

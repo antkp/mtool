@@ -30,6 +30,7 @@ class Control:
         self.lreg = self.ui.p.child('transformation').child('linear regression').value()
         self.flpz = self.ui.p.child('transformation').child('first&last point on same level').value()
 
+        self.show_unfiltered = self.ui.p.child('filter').child('show unfiltered data').value()
         self.filter = self.ui.p.child('filter').child('select filter').value()
         self.sigma = self.ui.p.child('filter').child('gauss').child('sigma').value()
         self.size = self.ui.p.child('filter').child('savitzky–golay').child('size').value()
@@ -80,6 +81,8 @@ class Control:
         self.ui.p.child('transformation').child('n^th derivative').sigValueChanged.connect(self.on_transformation)
         self.ui.p.child('transformation').child('n^th integral').sigValueChanged.connect(self.on_transformation)
 
+        # self.ui.p.child('filter').child('show unfiltered data').sigValueChanged.connect(self.update_ui_w3) # connect to Update3 sollte ausreichen ?
+        self.ui.p.child('filter').child('show unfiltered data').sigValueChanged.connect(self.on_filter)  # connect to Update3 sollte ausreichen ?
         self.ui.p.child('filter').child('select filter').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('gauss').child('sigma').sigValueChanged.connect(self.on_filter)
         self.ui.p.child('filter').child('butterworth').child('type').sigValueChanged.connect(self.on_filter)
@@ -173,12 +176,12 @@ class Control:
         if self.ui.p.child('config data').child('lengths compensation').value():
             self.ui.p.child('config data').child('head rows').setValue(1)
 
-        #try:
+        try:
             len_comp = self.ui.p.child('config data').child('lengths compensation').value()
             self.data.load(len_comp)
 
             self.on_treechange()
-        #except:
+        except:
             print('LOAD ERROR')
             self.ui.w2.clear()
 
@@ -461,7 +464,7 @@ class Control:
     def on_extend(self):
         print('on_extend')
         self.ui.p.child('extend axis').child('extend').hide()
-        self.extend_info = ''
+        self.extend_info = 'info extend'
         with pg.BusyCursor():
             if self.ui.p.child('extend axis').child('extend data').value():
                 self.ui.p.child('extend axis').child('extend').show()
@@ -543,6 +546,12 @@ class Control:
                 self.ui.w3.plotItem.showAxis('left')
                 self.ui.w3.plotItem.showAxis('bottom')
                 self.ui.w3.setAspectLocked(lock=False, ratio=None)
+
+                #hier ungefilterte daten anzeigen
+                if self.ui.p.child('filter').child('show unfiltered data').value():
+                    self.ui.w3.plot(self.data.x_transformed, self.data.y_transformed, pen={'color': (70, 70, 70), 'width': 2}, name='unfiltered')
+                    print('sollte passen')
+
                 self.ui.w3.plot(self.data.current_x, self.data.current_y, pen={'color': self.plotcolor, 'width': 1}, name='region')
                 if self.ui.p.child('moving section').child('average').value() != '- none -':
                     self.ui.w3.plot(self.data.x_transformed, self.data.y_devdist, pen={'color': (230, 50, 50), 'width': 3}, name='dev sec')
@@ -551,7 +560,9 @@ class Control:
                     self.ui.w3.plot(self.data.X_extend_1, self.data.Y_extend_1, pen={'color': (100, 100, 255), 'width': 3}, name='extended_1')
                     self.ui.w3.plot(self.data.X_extend_2, self.data.Y_extend_2, pen={'color': (100, 100, 255), 'width': 3}, name='extended_2')
                     self.ui.w3.plot(self.data.X_fit_1, self.data.Y_fit_1, pen={'color': (100, 255, 100), 'width': 3}, name='fit_1')
-                    self.ui.w3.plot(self.data.X_fit_2, self.data.Y_fit_2, pen={'color': (100, 255, 100), 'width': 3},name='fit_2')
+                    self.ui.w3.plot(self.data.X_fit_2, self.data.Y_fit_2, pen={'color': (100, 255, 100), 'width': 3}, name='fit_2')
+
+
             if self.ui.p.child('autoscale graph').value():
                 self.ui.w3.autoRange()
             self.on_treechange()
@@ -593,9 +604,19 @@ class Control:
                     if phase:
                       self.ui.w4.plot(self.data.x_f, self.data.y_p, pen={'color': self.plotcolor, 'width': 1})
                       self.ui.w4.setTitle( self.title + ' - polar spectrum - fft-window=' + self.win )
+
+                      # hier ungefilterte daten anzeigen
+                      #if self.ui.p.child('filter').child('show unfiltered data').value():
+                        #to do
+
+
                     else:
                       self.ui.w4.plot(self.data.x_f, self.data.y_f, pen={'color': self.plotcolor, 'width': 1})
-                      self.ui.w4.setTitle( self.title + ' - amplitude spectrum - fft-window=' + self.win )
+                      self.ui.w4.setTitle( self.title + ' - amplitude spectrum - fft-window=' + self.win)
+
+                      # hier ungefilterte daten anzeigen
+                      #if self.ui.p.child('filter').child('show unfiltered data').value():
+                            #to do
 
                 else:
                     self.ui.p.child('fft').child('fft config').hide()
